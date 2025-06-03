@@ -1,0 +1,12 @@
+for n in 82358 82391 82419 82443 85020 85035 85041 85234 85239 85252 97202 97233 97252
+do
+	python track_puller.py $file $n > trho_hist.dat
+	./burn
+
+	python trim_timestep.py $n
+	 
+    mv timestep_abundances_$n.data timesteps/timestep_abundances_$n.data
+	rm trho_hist.dat
+	rm final_abundances.dat
+	rm one_zone_burn.data
+done

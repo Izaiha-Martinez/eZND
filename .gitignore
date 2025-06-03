@@ -4,6 +4,10 @@
 
 #Output files
 *.data
+*.dat
+
+#My Save Files 
+*.csv 
 
 #Executables
 run_profiler

@@ -5,6 +5,7 @@
 
 #MESA_DIR = /Users/Kevin/mesa_5271
 #MESA_DIR = /Users/Kevin/mesa_5819
+MESA_DIR = /grps2/dmtownsley/sjboos/newBurn/mesa_8845_broxton #added the path to MESA directory
 
 include $(MESA_DIR)/utils/makefile_header
 
