@@ -87,7 +87,7 @@ module znd
     use const_def
     use rates_def
 	!use screen_def
-	use crlibm_lib
+	!use crlibm_lib
 	
 	use lane_emden_solver
 	use wd_solver
@@ -253,13 +253,25 @@ module znd
 	double precision :: Pgas, logPgas
 	double precision :: dlnRho_dlnPgas_const_T
     double precision :: dlnRho_dlnT_const_Pgas
-	double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
-	double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array
-    double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array
-    double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array
-    double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array
-    double precision, dimension(num_helm_results) :: res_helm   !HELM EOS array
+	double precision, dimension(num_helm_results) :: res_helm   !HELM EOS array
+	
+	! The original declaration
+	!double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
+	!double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT 
+    !double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT
+    !double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
+    !double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
     
+	! What works
+	double precision, dimension(num_eos_basic_results) :: res
+	double precision :: d_dlnd(num_eos_basic_results)
+	double precision :: d_dlnT(num_eos_basic_results)
+
+	!double precision :: d_dxa(num_eos_d_dxa_results, species)
+	!double precision :: d_dxa(num_eos_basic_results, num_eos_basic_results)
+	real(dp), allocatable :: d_dxa(:,:)
+
+
 	!Specific variables for the burn inlist:
     double precision :: rho0, t0, p0, cs0, g0	!Initial thermodynamic conditions
     double precision :: burn_rho, logRho, burn_t, burn_P, logT, burn_time, burn_u, burn_e
@@ -329,6 +341,7 @@ module znd
 	double precision ::  abar, zbar, z2bar, ye
 	double precision ::  xsum
 	double precision ::  mass_correction
+	double precision ::  z53bar !new variable in composition_info
 	double precision ::  eps_nuc, d_eps_nuc_dRho, d_eps_nuc_dT
 	double precision ::  theta_e_for_graboske_et_al
 	double precision, pointer, dimension(:) ::  eps_nuc_categories !(num_categories)
@@ -368,7 +381,12 @@ module znd
     double precision :: sonic_loc	!Location where we hit the sonic point (or max ux/cs)
     logical :: gone_sonic			!Whether we hit a sonic point during the integration    
     double precision :: linearization_length, pathological_loc, max_mach, l_burn, q_tot
-          
+    
+	!real(dp), allocatable :: d_dxa_const_TRho(:,:)				!New declaration for eosPT_get
+    
+	type (EoS_General_Info), pointer :: rq			!New declaration, added as the eos_support calls on it
+
+
 	contains
 	
 		subroutine read_inlist
@@ -406,7 +424,7 @@ module znd
       
       		! set defaults:
       		!-----------------------------------------------------------------------------
-      		my_mesa_dir = ''
+			!my_mesa_dir = '/home/iemartinez/mesa_dir/mesa-r23.05.1'
       		!data_dir = '/Users/Kevin/mesa/data'	!MESA data location
     		net_file = 'basic.net'				!Which nuclear net to use
     		output_profile_name='./diagnosis_runs/rho0_1d5_t0_1d8-he4_to_c12.data'
@@ -537,11 +555,34 @@ module znd
          	use_cache = .true.
          
 			ierr = 0
+
+			write(*,*) 'Starting Subroutine initialize'
+			!write(*,*) 'info = ', info 
+			!write(*,*) 'ierr = ', ierr
+
+			! From the eos test folder 
+			!info = 0
+         	!allocate(d_dxa(num_eos_d_dxa_results,species),stat=info)
+			if (info /= 0) then
+				write(*,*) 'allocate failed for Setup_eos'
+				call mesa_error(__FILE__,__LINE__)
+         	end if
+
+			write(*,*) 'species = ', species
+			write(*,*) 'num_eos_d_dxa_results = ', num_eos_d_dxa_results
+			write(*,*) 'd_dxa = ', d_dxa 				!Nothing prints, weird 
+			write(*,*) 'd_dxa size =', shape(d_dxa)
 			
-			call crlibm_init()
-			
+
+			!call crlibm_init()
+			call math_init()
+
 			call const_init(my_mesa_dir,ierr)
-			
+			if (ierr /= 0) then
+				write(*,*) 'const_init failed'
+				call mesa_error(__FILE__,__LINE__)
+			end if
+
 			!Initialize my Lane-Emden solver:
 			call lane_emden_init()	
 			
@@ -555,7 +596,7 @@ module znd
 			   return
 			end if
 			
-			call eos_init(eos_file_prefix, '', '', '', use_cache, info)
+			call eos_init(eos_file_prefix, use_cache, info)
 			if (info /= 0) then
 				write(*,*) 'eos_init failed in Setup_eos'
 				stop 1
@@ -569,6 +610,7 @@ module znd
 				stop 1
 			end if
 			write(*,*) '1'
+			write(*,*) 'eos_handle =', eos_handle
 			
 			!call reaclib_init(ierr)   
 			!if (ierr /= 0) then
@@ -584,7 +626,10 @@ module znd
 			!end if
 			!write(*,*) '3'
 			
-			 call rates_init('reactions.list', '', .false., '', '', '', ierr)
+			 call rates_init('reactions.list', '', '', & 
+				.false., .false., &
+				'', '', '', & 
+				ierr)
 			if (ierr /= 0) then
 			   write(*,*) 'rates_init failed'
 			   return
@@ -605,7 +650,9 @@ module znd
 			!   write(*,*) 'kap_init failed'
 			!   return
 			!end if 
-      	
+		
+      	write(*,*) 'Exiting initialize'
+      	write(*,*)
       end subroutine initialize
       
       
@@ -649,17 +696,17 @@ module znd
       	 allocate(which_rates(rates_reaction_id_max))
          which_rates(:) = which_rates_choice
 
-         call net_set_which_rates(handle, which_rates, ierr)
+         !call net_set_which_rates(handle, which_rates, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_set_which_rate_f17pg failed'
             return
          end if
          
-         call net_setup_tables(handle, 'rate_tables', '', ierr)
-         if (ierr /= 0) then
-            write(*,*) 'net_setup_tables failed'
-            return
-         end if
+         !call net_setup_tables(handle, 'rate_tables', ierr)
+         !if (ierr /= 0) then
+         !   write(*,*) 'net_setup_tables failed'
+         !   return
+         !end if
          
          species = net_num_isos(handle, ierr)
          if (ierr /= 0) then
@@ -702,7 +749,7 @@ module znd
             return
          end if
 
-         lwork_net = net_work_size(handle, ierr)
+         !lwork_net = net_work_size(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in net_work_size'
             return
@@ -849,15 +896,14 @@ module znd
 
 			call newton(&
 				nz, nvar_hug, x1d, xold1d, &
-				matrix_type, m1_hug, m2_hug, lapack_decsol, null_decsolblk, &
+				matrix_type, m1_hug, m2_hug, & 
+				lapack_decsol, null_decsolblk, &
 				lrd_newton, rpar_decsol_newton, lid_newton, ipar_decsol_newton, which_decsol, &
 				tol_correction_norm, &
-				set_primaries_hug, set_secondaries_hug, default_set_xscale, &
-				default_Bdomain, default_xdomain, eval_equations_hug, &
+				set_primaries_hug, set_secondaries_hug, default_set_xscale, default_Bdomain, default_xdomain, eval_equations_hug, &
 				size_equ, sizeB, default_inspectB, &
 				enter_setmatrix_hug, exit_setmatrix, failed_in_setmatrix, default_force_another_iter, &
-				xscale1d, equ1d, ldy, nsec, y1d, work_newton, lwork_newton, iwork_newton, &
-				liwork_newton, AF1, &
+				xscale1d, equ1d, ldy, nsec, y1d, work_newton, lwork_newton, iwork_newton, liwork_newton, AF1, &
 				lrpar, rpar, lipar, ipar, &
 				nonconv, ierr)
 			if (ierr /= 0) then
@@ -875,9 +921,10 @@ module znd
 			
 			logRho = log10(rho)
          	logT = log10(t)
-         	call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa_hug, &
-        		rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+			call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa_hug, &
+				rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 			e = exp(res(i_lnE))
 			p = exp(res(i_lnPgas)) + 1/3d0*crad*t**4
 			
@@ -1012,9 +1059,10 @@ module znd
          	logRho = log10(rho0)
          	logT = log10(T0)
          	
-         	call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        		rho0, logRho, T0, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+         	call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho0, logRho, T0, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 			e0 = exp(res(i_lnE))
 			p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t0**4
 			mu0 = 1d0/(1/abar + 1/zbar)
@@ -1068,9 +1116,10 @@ module znd
 			
 			logRho = log10(rho_cj)
          	logT = log10(T_cj)
-         	call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        		rho_cj, logRho, T_cj, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+         	call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho_cj, logRho, T_cj, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
         	e_cj = exp(res(i_lnE))
         	p_cj = exp(res(i_lnPgas)) + 1/3d0*crad*t_cj**4
 			
@@ -1168,13 +1217,16 @@ module znd
 			
 			!Now that the CJ conditions are found, we can also get the Neumann conditions
 			!to start the integration at:
-			call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            	ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+			call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
 			logRho = log10(rho0)
          	logT = log10(T0)
-         	call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        		rho0, logRho, T0, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+			call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho0, logRho, T0, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 			e0 = exp(res(i_lnE))
 			p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t0**4
 			mu0 = 1d0/(1/abar + 1/zbar)
@@ -1224,9 +1276,10 @@ module znd
 			t_neumann = x_newton(2,1)*t0
 			logRho = log10(rho_neumann)
          logT = log10(T_neumann)
-         call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        		rho_neumann, logRho, T_neumann, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho_neumann, logRho, T_neumann, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
         	p_neumann = exp(res(i_lnPgas)) + 1/3d0*crad*t_neumann**4
         	e_neumann = exp(res(i_lnE))
         	cs_neumann = sqrt(res(i_gamma1)*p_neumann/rho_neumann)
@@ -1389,11 +1442,14 @@ module znd
         !First evaluate the EOS at the initial (rho0, t0) point to get p0:
         logrho = log10(rho0)
         logt = log10(t0)
-        call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-        call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        	rho0, logRho, T0, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho0, logRho, T0, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e0 = exp(res(i_lnE))
 		p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t0**4
         
@@ -1402,11 +1458,14 @@ module znd
         t = xt*t0
         logrho = log10(rho)
         logt = log10(t)
-        call composition_info(species, chem_id, xa_end, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-         call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa_end, &
-        	rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa_end, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa_end, &
+				rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e1 = exp(res(i_lnE))
 		p1 = exp(res(i_lnPgas)) + 1/3d0*crad*t**4
 		xp = p1/p0
@@ -1418,8 +1477,10 @@ module znd
 		chi_t = res(i_chiT)
 		dp_dt = p1/T*chi_T
 		
-		call eos_get_helm_results( Xh, abar, zbar, Rho, logRho, &
-    			T, logT, .true., .false., .false., res_helm, ierr)
+		call eos_get_helm_results(&
+			Xh, abar, zbar, Rho, logRho, T, logT, &
+			1d0, 0d0, .false., .false., &
+			res_helm, ierr)
     	d2e_drho2 = res_helm(h_dedd)
     	d2e_drhoT = res_helm(h_dedt)
     	d2e_dt2 = res_helm(h_dett)
@@ -1732,6 +1793,7 @@ module znd
       	implicit none
       	
       	include 'formats.dek'
+      	!use formats
       	
          integer, intent(in) :: nvar, nz
          double precision, pointer, dimension(:,:) :: equ
@@ -1750,10 +1812,25 @@ module znd
   		 double precision :: de_drho, de_dt, dp_drho, dp_dt, chi_rho, chi_T
   		 double precision :: q_bind, bind_final, w_final
   		 integer :: info
-  		 double precision, dimension(num_eos_basic_results) :: res
-		 double precision :: d_dlnRho_const_T(num_eos_basic_results) 
-    	 double precision :: d_dlnT_const_Rho(num_eos_basic_results)
-  	
+
+		! The original declaration
+		!double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
+		!double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT 
+		!double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT
+		!double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
+		!double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
+
+		! What works
+		double precision, dimension(num_eos_basic_results) :: res
+		double precision :: d_dlnd(num_eos_basic_results)
+		double precision :: d_dlnT(num_eos_basic_results)
+
+		double precision :: d_dxa(num_eos_d_dxa_results, species)
+		!double precision :: d_dxa(num_eos_basic_results, num_eos_basic_results)
+		!real(dp), allocatable :: d_dxa(:,:)
+
+
+		 
          ierr = 0
          call set_sec_neumann(0, skip_partials, lrpar, rpar, lipar, ipar, ierr); if (ierr /= 0) return
          
@@ -1772,11 +1849,14 @@ module znd
 		V0 = 1d0/rho0
         logrho = log10(rho0)
         logt = log10(t0)
-        call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-        call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        	rho0, logRho, T0, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho0, logRho, T0, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e0 = exp(res(i_lnE))
 		p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t0**4
         
@@ -1786,11 +1866,14 @@ module znd
         t = xt*t0
         logrho = log10(rho)
         logt = log10(t)
-        call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-         call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        	rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e1 = exp(res(i_lnE))
 		p1 = exp(res(i_lnPgas)) + 1/3d0*crad*t**4
 		
@@ -2007,9 +2090,24 @@ module znd
   		 double precision e1, e0, p1, p0, xrho, xp, xd, xt
   		 double precision de_drho, de_dt, dp_drho, dp_dt, chi_rho, chi_T
   		 integer :: info
-  		 double precision, dimension(num_eos_basic_results) :: res
-		 double precision :: d_dlnRho_const_T(num_eos_basic_results) 
-    	 double precision :: d_dlnT_const_Rho(num_eos_basic_results)
+		 
+		! The original declaration
+		!double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
+		!double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT 
+		!double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array	!These are no longer used in eosDT
+		!double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
+		!double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array	!These are no longer used in eosDT
+
+
+		! What works
+		double precision, dimension(num_eos_basic_results) :: res
+		double precision :: d_dlnd(num_eos_basic_results)
+		double precision :: d_dlnT(num_eos_basic_results)
+
+		double precision :: d_dxa(num_eos_d_dxa_results, species)
+		!double precision :: d_dxa(num_eos_basic_results, num_eos_basic_results)
+		!real(dp), allocatable :: d_dxa(:,:)
+
   	
          ierr = 0
          call set_sec_hug(0, skip_partials, lrpar, rpar, lipar, ipar, ierr); if (ierr /= 0) return
@@ -2023,11 +2121,14 @@ module znd
 		!First evaluate the EOS at the initial (rho0, t0) point to get p0:
         logrho = log10(rho0)
         logt = log10(t0)
-        call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-        call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        	rho0, logRho, T0, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				rho0, logRho, T0, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e0 = exp(res(i_lnE))
 		p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t0**4
         
@@ -2037,11 +2138,14 @@ module znd
         t = xt*t0
         logrho = log10(rho)
         logt = log10(t)
-        call composition_info(species, chem_id, xa_hug, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
-         call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa_hug, &
-        	rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        call composition_info( &
+				species, chem_id, xa_hug, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa_hug, &
+				rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 		e1 = exp(res(i_lnE))
 		p1 = exp(res(i_lnPgas)) + 1/3d0*crad*t**4
 		
@@ -2152,7 +2256,7 @@ module znd
          integer, intent(in) :: n, lrpar, lipar
          real(dp), intent(in) :: t, h
          real(dp), intent(inout) :: x(:)
-         real(dp), intent(out) :: f(:) ! dxdt
+         real(dp), intent(inout) :: f(:) ! dxdt
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr
@@ -2173,7 +2277,7 @@ module znd
          integer, intent(in) :: n, ld_dfdx, lrpar, lipar
          real(dp), intent(in) :: time, ht
          real(dp), intent(inout) :: x(:)
-         real(dp), intent(out) :: f(:), dfdx(:,:)
+         real(dp), intent(inout) :: f(:), dfdx(:,:)
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr
@@ -2261,17 +2365,20 @@ module znd
          !write(*,*) 'uy:',uy
          !read(*,*) testchar
          
-         call composition_info(species, chem_id, composition, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+         call composition_info( &
+				species, chem_id, composition, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
          sum_y = sum(composition/chem_isos% W(chem_id(1:species)))
          sum_yz = sum(composition*chem_isos% Z(chem_id(1:species))/&
          	chem_isos% W(chem_id(1:species)))
             
         logRho = log10(rho)
         logT = log10(T)
-        call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, composition, &
-        	rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-        	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+		call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, composition, &
+				rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
      	if (ierr /= 0) then
             write(*,*) 'failed in eosDT_get', ierr
         endif
@@ -2279,8 +2386,10 @@ module znd
         energy = exp(res(i_lnE)) 							!Internal erg/g of gas
         gamma1 = res(i_gamma1)
         
-        call eos_get_helm_results(Xh, abar, zbar, &
-        	Rho, logRho, T, logT, .true., .false., .false., res_helm, ierr)
+		call eos_get_helm_results(&
+			Xh, abar, zbar, Rho, logRho, T, logT, &
+			1d0, 0d0, .false., .false., &
+			res_helm, ierr)
      	if (ierr /= 0) then
             write(*,*) 'failed in eos_get_helm_results', ierr
         endif
@@ -2386,17 +2495,17 @@ module znd
 		endif
 		
         just_dxdt = .false.
-     	call net_get( &
+		call net_get( &
             handle, just_dxdt, netinfo, species, num_reactions, &
             composition, T, logT, Rho, logRho, & 
             abar, zbar, z2bar, ye, eta, d_eta_dlnT, d_eta_dlnRho, &
             rate_factors, weak_rate_factor, & 
-            std_reaction_Qs, std_reaction_neuQs, .false., .false., &
+            std_reaction_Qs, std_reaction_neuQs, &
             eps_nuc, d_eps_nuc_dRho, d_eps_nuc_dT, d_eps_nuc_dx, & 
             dxdt, d_dxdt_dRho, d_dxdt_dT, d_dxdt_dx, & 
-            screening_mode, theta_e_for_graboske_et_al, &     
+            screening_mode, &
             eps_nuc_categories, eps_neu_total, & 
-            lwork_net, work_net, ierr)
+            ierr)
         if (ierr /= 0) then
             write(*,*) 'failed in net_get', ierr
             write(*,*) sum(composition), lwork_net
@@ -3520,7 +3629,7 @@ module znd
          integer, intent(in) :: n, lrpar, lipar
          real(dp), intent(in) :: t, h
          real(dp), intent(inout) :: x(:)
-         real(dp), intent(out) :: f(:) ! dxdt
+         real(dp), intent(inout) :: f(:) ! dxdt
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr
@@ -3541,7 +3650,7 @@ module znd
          integer, intent(in) :: n, ld_dfdx, lrpar, lipar
          real(dp), intent(in) :: time, h
          real(dp), intent(inout) :: x(:)
-         real(dp), intent(out) :: f(:), dfdx(:,:)
+         real(dp), intent(inout) :: f(:), dfdx(:,:)
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr
@@ -3574,24 +3683,37 @@ module znd
          
          !write(*,*) composition(1)
          
-         call composition_info(species, chem_id, composition, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+         call composition_info( &
+				species, chem_id, composition, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
          
          rho = x(species+1) !local variable
             
         logPgas = log10(burn_constPgas)
-        call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
-        	burn_constPgas, logPgas, burn_T, logT, rho, logRho, &
-        	dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
-     		res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-     		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+        !call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, xa, &
+        !	burn_constPgas, logPgas, burn_T, logT, rho, logRho, &
+        !	dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
+     	!	res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+     	!	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+		call eosPT_get(& 
+				eos_handle, &
+				species, chem_id, net_iso, xa, &
+				burn_constPgas, logPgas, burn_T, logT, &
+				rho, logRho, dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
+				res, d_dlnd, d_dlnT, &
+				d_dxa, ierr)
+
      	if (ierr /= 0) then
             write(*,*) 'failed in eosPT_get', ierr
         endif
         cp = res(i_Cp)
         
-        call eos_get_helm_results(Xh, abar, zbar, &
-        	Rho, logRho, burn_T, logT, .true., .false., .false., res_helm, ierr)
+        call eos_get_helm_results(&
+			Xh, abar, zbar, Rho, logRho, burn_T, logT, &
+			1d0, 0d0, .false., .false., &
+			res_helm, ierr)
+
      	if (ierr /= 0) then
             write(*,*) 'failed in eosPT_get', ierr
         endif
@@ -3599,17 +3721,17 @@ module znd
 		!write(*,*) x(1), sum(composition)
 		
         just_dxdt = .false.
-     	call net_get( &
+		call net_get( &
             handle, just_dxdt, netinfo, species, num_reactions, &
             composition, burn_T, logT, burn_Rho, logRho, & 
             abar, zbar, z2bar, ye, eta, d_eta_dlnT, d_eta_dlnRho, &
             rate_factors, weak_rate_factor, & 
-            std_reaction_Qs, std_reaction_neuQs, .false., .false., &
+            std_reaction_Qs, std_reaction_neuQs, &
             eps_nuc, d_eps_nuc_dRho, d_eps_nuc_dT, d_eps_nuc_dx, & 
             dxdt, d_dxdt_dRho, d_dxdt_dT, d_dxdt_dx, & 
-            screening_mode, theta_e_for_graboske_et_al, &     
+            screening_mode, &
             eps_nuc_categories, eps_neu_total, & 
-            lwork_net, work_net, ierr)
+            ierr)
         if (ierr /= 0) then
             write(*,*) 'failed in net_get', ierr
             write(*,*) x, sum(composition), lwork_net
@@ -3665,7 +3787,8 @@ module znd
          		
          	!d/dT (dT/dt):
          	dfdx(species+1, species+1) = d_eps_nuc_dT/cp - &
-         		eps_nuc*d_dlnT_const_Rho(i_Cp)/(burn_T*cp**2)
+         		!eps_nuc*d_dlnT_const_Rho(i_Cp)/(burn_T*cp**2)
+         		eps_nuc*d_dlnd(i_Cp)/(burn_T*cp**2)
          		
          	!d/dT (dXi/dt):
          	dfdx(1:species, species+1) = d_dxdt_dT
@@ -3736,22 +3859,24 @@ module znd
          
          !write(*,*) composition(1)
          
-         call composition_info(species, chem_id, composition, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+         call composition_info( &
+				species, chem_id, composition, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
 
 		!write(*,*) x(1), sum(composition)
-		
-     	call net_get( &
+
+		call net_get( &
             handle, just_dxdt, netinfo, species, num_reactions, &
             composition, burn_T, logT, burn_Rho, logRho, & 
             abar, zbar, z2bar, ye, eta, d_eta_dlnT, d_eta_dlnRho, &
             rate_factors, weak_rate_factor, & 
-            std_reaction_Qs, std_reaction_neuQs, .false., .false., &
+            std_reaction_Qs, std_reaction_neuQs, &
             eps_nuc, d_eps_nuc_dRho, d_eps_nuc_dT, d_eps_nuc_dx, & 
             dxdt, d_dxdt_dRho, d_dxdt_dT, d_dxdt_dx, & 
-            screening_mode, theta_e_for_graboske_et_al, &     
+            screening_mode, &
             eps_nuc_categories, eps_neu_total, & 
-            lwork_net, work_net, ierr)
+            ierr)
         if (ierr /= 0) then
             write(*,*) 'failed in net_get', ierr
             write(*,*) x, sum(composition), lwork_net
@@ -3826,8 +3951,8 @@ module znd
          integer, intent(in) :: n, nzmax, lrpar, lipar
          real(dp), intent(in) :: time, h
          real(dp), intent(inout) :: y(:)
-         integer, intent(out) :: ia(:), ja(:)
-         real(dp), intent(out) :: f(:), values(:)
+         integer, intent(inout) :: ia(:), ja(:)
+         real(dp), intent(inout) :: f(:), values(:)
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr ! nonzero means terminate integration
@@ -3917,7 +4042,7 @@ module znd
          double precision :: eps, odescale
          logical :: use_pivoting, trace, burn_dbg
 
-         integer :: burn_lwork, net_lwork
+         !integer :: burn_lwork, net_lwork		!! No longer needed in newer versions 
          real(dp), pointer :: burn_work_array(:), net_work_array(:)
          real(dp) :: avg_eps_nuc, eps_neu_total
          
@@ -3967,8 +4092,10 @@ module znd
          !	write(*,*) chem_id(i), net_iso(i), net_iso(chem_id(i))
          !end do
          
-         call composition_info(species, chem_id, xa, xh, xhe, zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+         call composition_info( &
+				species, chem_id, xa, xh, xhe, zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
             
          logT = log10(burn_t)
          logRho = log10(burn_rho)
@@ -3982,18 +4109,18 @@ module znd
          reuse_given_rates = .false.
 
          just_dxdt = .false.
-         
-         call net_get( &
+		call net_get( &
             handle, just_dxdt, netinfo, species, num_reactions, &
             xa, burn_T, logT, burn_Rho, logRho, & 
             abar, zbar, z2bar, ye, eta, d_eta_dlnT, d_eta_dlnRho, &
             rate_factors, weak_rate_factor, & 
-            std_reaction_Qs, std_reaction_neuQs, .false., .false., &
+            std_reaction_Qs, std_reaction_neuQs, &
             eps_nuc, d_eps_nuc_dRho, d_eps_nuc_dT, d_eps_nuc_dx, & 
             dxdt, d_dxdt_dRho, d_dxdt_dT, d_dxdt_dx, & 
-            screening_mode, theta_e_for_graboske_et_al, &     
+            screening_mode, &
             eps_nuc_categories, eps_neu_total, & 
-            lwork_net, work_net, ierr)
+            ierr)
+
          if (ierr /= 0) then
             write(*,*) 'failed in net_get'
             return
@@ -4051,28 +4178,30 @@ module znd
          burn_dbg = .false.
          use_pivoting = .true.
 
-         burn_lwork = net_1_zone_burn_work_size(handle,ierr)
-         if (ierr /= 0) stop
-         net_lwork = net_work_size(handle,ierr)
-         if (ierr /= 0) stop
-         allocate(net_work_array(net_lwork), burn_work_array(burn_lwork))
+         !burn_lwork = net_1_zone_burn_work_size(handle,ierr)
+         !if (ierr /= 0) stop
+         !net_lwork = net_work_size(handle,ierr)
+         !if (ierr /= 0) stop
+         !allocate(net_work_array(net_lwork), burn_work_array(burn_lwork))
          
           ! a 1-zone integrator for nets -- for given temperature and density as functions of time
+
       	 call net_1_zone_burn(&
-              handle, species, num_reactions, t_start, t_end, xa, &
+              handle, eos_handle, species, num_reactions, t_start, t_end, xa, &
               ! for interpolating T, rho, eta wrt time
               num_times, times, log10Ts_f1, log10Rhos_f1, etas_f1, &
               ! other args for net_get
-              dxdt_source_term, rate_factors, weak_rate_factor, std_reaction_Qs, std_reaction_neuQs, &
-              screening_mode, theta_e_for_graboske_et_al, &
+              dxdt_source_term, rate_factors, &
+			  weak_rate_factor, std_reaction_Qs, std_reaction_neuQs, &
+              screening_mode, &
               ! args to control the solver -- see num/public/num_isolve.dek
               h, max_steps, eps, odescale, &
-              .false., use_pivoting, trace, burn_dbg, burn_finish_substep, &
-              burn_lwork, burn_work_array, &
-              net_lwork, net_work_array, &
+              use_pivoting, trace, burn_dbg, burn_finish_substep, &
+			  ! net_lwork, burn_lwork, theta_e_for_graboske_et_al, net_work_array, burn_work_array !! No longer needed 
               ! results
-              ending_x, avg_eps_nuc, eps_neu_total, &
+              ending_x, eps_nuc_categories, avg_eps_nuc, eps_neu_total, &
               nfcn, njac, nstep, naccpt, nrejct, ierr)
+
          if (ierr /= 0) then
             write(*,*) 'failed in net_1_zone_burn'
             stop 1
@@ -4168,16 +4297,16 @@ module znd
 
    		call isolve( &
    			which_solver, num_vars, znd_derivs, t_start, vars, t_end, &
-   			h, max_step_size, max_steps, &
-   			rtol, atol, itol, y_min, y_max, &
-   			znd_jacob, ijac, null_sjac, nzmax, isparse, mljac, mujac, &
-   			null_mas, imas, mlmas, mumas, &
-   			znd_solout, iout, &
-   			lapack_decsol, null_decsols, null_decsolblk, &
+			h, max_step_size, max_steps, &
+			rtol, atol, itol, y_min, y_max, &
+			znd_jacob, ijac, null_sjac, nzmax, isparse, mljac, mujac, &
+			null_mas, imas, mlmas, mumas, &
+			znd_solout, iout, &
+			lapack_decsol, null_decsols, null_decsolblk, &
                         lrd, rpar_decsol, lid, ipar_decsol, &
                         caller_id_blk, nvar_blk, nz_blk, lblk, dblk, ublk, uf_lblk, uf_dblk, uf_ublk, &
                         null_fcn_blk_dble, null_jac_blk_dble, &
-   			work_isolve, lwork_isolve, iwork_isolve, liwork_isolve, &
+			work_isolve, lwork_isolve, iwork_isolve, liwork_isolve, &
    			lrpar, rpar, lipar, ipar, &
    			lout, idid)
    		if (ierr /= 0) then
@@ -4625,24 +4754,105 @@ module znd
          vars(1:species) = xa			!Composition
          vars(species+1) = 1d0
          vars(species+2) = 0d0
-         
+         !write(*,*) 'sum(xa) =', sum(xa)										!Added these lines, remove later
+
          write(*,*) 'here?'
          
-         call composition_info(species, chem_id, xa, xh, xhe, Zm, abar, zbar, z2bar, &
-            ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+         call composition_info( &
+				species, chem_id, xa, xh, xhe, Zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
          logRho = log10(rho0)
          logT = log10(t0)
-         call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-         	xa, rho0, logRho, t0, logT, &
-         	res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-         	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+				
+		write(*,*) 
+		!Before eosDT_get, res(i_lnPgas) & res(i_gamma1) have values but get set to NaN afterwards
+		write(*,*) 'Before call eosDT_get'
+		!write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
+		!write(*,*) 'p0 values: crad =', crad
+		!write(*,*) 'p0 values: t0 =', t0
+		!write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
+		!write(*,*) 'cs0 values: p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		!write(*,*) 'cs0 values: rho0 =', rho0
+		!write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		!write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
+		
+		write(*,*) 
+		write(*,*) 'Variable of eosDT_get'
+		write(*,*) 'eos_handle =', eos_handle
+		write(*,*) 'species =', species
+		!write(*,*) 'chem_id =', chem_id
+		!write(*,*) 'net_iso =', net_iso
+		!write(*,*) 'xa =', xa
+		!write(*,*) 'rho0 =', rho0
+		!write(*,*) 'logRho =', logRho
+		!write(*,*) 't0 =', t0
+		!write(*,*) 'logT =', logT
+		
+		!write(*,*) 'res shape = ', shape(res)
+		!write(*,*) 'res =', res
+		!write(*,*) 'd_dlnd =', d_dlnd
+		!write(*,*) 'size d_dlnd =', size(d_dlnd)
+		!write(*,*) 'd_dlnT =', d_dlnT
+		!write(*,*) 'size d_dlnT =', size(d_dlnT)
+		!write(*,*) 'd_dxa =', d_dxa
+		write(*,*) 'size d_dxa =', size(d_dxa)
+		write(*,*) 'shape d_dxa =', shape(d_dxa)
+		!write(*,*) 'ierr =', ierr
+		!write(*,*) 'i_lnPgas =', i_lnPgas
+		!write(*,*) 'i_gamma1 =', i_gamma1
+
+        
+		allocate(d_dxa(num_eos_d_dxa_results,species),stat=info)
+
+		call eosDT_get( & 
+			eos_handle, species, chem_id, net_iso, xa, &
+			rho0, logRho, t0, logT, & 
+			res, d_dlnd, d_dlnT, d_dxa, ierr)
          p0 = exp(res(i_lnPgas)) + crad*t0**4/3d0
          cs0 = sqrt(res(i_gamma1)*p0/rho0)
          g0 = standard_cgrav*m_c/(r_wd**2)
          
 		 q_init = avo*mev_to_ergs*sum(xa*chem_isos% binding_energy(chem_id(1:species))/&
 		 	chem_isos% W(chem_id(1:species)))
-		 	
+
+		write(*,*)
+		write(*,*) 'After call eosDT_get'
+		!write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
+		!write(*,*) 'p0 values: crad =', crad
+		!write(*,*) 'p0 values: t0 =', t0
+		!write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
+		!write(*,*) 'cs0 values: p0 =', p0
+		!write(*,*) 'cs0 values: rho0 =', rho0
+		!write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		!write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
+		
+		write(*,*) 
+		write(*,*) 'Variable of eosDT_get'
+		write(*,*) 'eos_handle =', eos_handle
+		write(*,*) 'species =', species
+		!write(*,*) 'chem_id =', chem_id
+		!write(*,*) 'net_iso =', net_iso
+		!write(*,*) 'xa =', xa
+		!write(*,*) 'rho0 =', rho0
+		!write(*,*) 'logRho =', logRho
+		!write(*,*) 't0 =', t0
+		!write(*,*) 'logT =', logT
+		
+		!write(*,*) 'res shape = ', shape(res)
+		!write(*,*) 'res =', res
+		!write(*,*) 'd_dlnd =', d_dlnd
+		!write(*,*) 'size d_dlnd =', size(d_dlnd)
+		!write(*,*) 'd_dlnT =', d_dlnT
+		!write(*,*) 'size d_dlnT =', size(d_dlnT)
+		!write(*,*) 'd_dxa =', d_dxa
+		write(*,*) 'size d_dxa =', size(d_dxa)
+		write(*,*) 'shape d_dxa =', shape(d_dxa)
+		!write(*,*) 'ierr =', ierr
+		!write(*,*) 'i_lnPgas =', i_lnPgas
+		!write(*,*) 'i_gamma1 =', i_gamma1
+
+
 		 write(*,*) 'Ambient conditions:'
 		 write(*,'(a20,ES25.9)') 'rho0 (g/cm^3):',rho0
 		 write(*,'(a20,ES25.9)') 'T0 (K):',t0
@@ -4789,10 +4999,10 @@ module znd
          write(*,'(a20,i25)') 'max_steps',max_steps
          
          if(do_constp) then
-         	call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-         		xa, burn_Rho, logRho, burn_T, logT, &
-         		res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-         		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+			call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, xa, &
+				burn_Rho, logRho, burn_T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
          	burn_constPgas = exp(res(i_lnPgas))! + crad*T**4/3d0
          endif
          
@@ -4883,10 +5093,10 @@ module znd
         		rho0 = 10**(rho_sweep_log_min + &
         			(rho_sweep_log_max-rho_sweep_log_min)*(i-1d0)/(rho_sweep_num_steps-1d0))
 				logRho = log10(rho0)
-         		call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-         			xa, rho0, logRho, t0, logT, &
-         			res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-         			d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+				call eosDT_get( & 
+					eos_handle, species, chem_id, net_iso, xa, &
+					rho0, logRho, t0, logT, & 
+					res, d_dlnd, d_dlnT, d_dxa, ierr)
          		p0 = exp(res(i_lnPgas)) + crad*t0**4/3d0
          		cs0 = sqrt(res(i_gamma1)*p0/rho0)
 				h_scale = p0/(rho0*grav_init)
@@ -5163,16 +5373,18 @@ module znd
 			call znd_integrate(t_start, t_end, num_steps, output_profile, profile_io, find_lburn)
 			
 			!Check the free electron ratio at the end to see if there were electron captures
-			call composition_info(species, chem_id, vars(1:species), xh, xhe, Zm, abar, zbar, z2bar, &
-            	ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+			call composition_info( &
+				species, chem_id, vars(1:species), xh, xhe, Zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
 			Rho = vars(species+1)
 			logRho = log10(Rho)
 			T = vars(species+2)
 			logT = log10(T)
-			call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-         		vars(1:species), Rho, logRho, T, logT, &
-         		res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-         		d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+			call eosDT_get( & 
+				eos_handle, species, chem_id, net_iso, vars(1:species), &
+				Rho, logRho, T, logT, & 
+				res, d_dlnd, d_dlnT, d_dxa, ierr)
 			
 			write(*,'(a15,ES25.9)') 'Y_e', ye
 			write(*,'(a15,ES25.9)') 'free_e', exp(res(i_lnfree_e))
@@ -5807,8 +6019,10 @@ module znd
        		write(*,*) 'Finding l_burn as a function of M_env...'
        		
        		t_b = t0
-       		call composition_info(species, chem_id, xa, xh, xhe, Zm, abar, zbar, z2bar, &
-            	ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+       		call composition_info( &
+				species, chem_id, xa, xh, xhe, Zm, &
+				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+				xsum, dabar_dx, dzbar_dx, dmc_dx)
             !First calculate r_wd and grav given m_c:
 			r_wd = 7.62d-3*rsun*m_c**(-1.616)		!WD mass-radius relation
 			grav = (standard_cgrav*msun/rsun**2)*(1.72d4*m_c**4.23)	!surface gravity (cm/s^2)
@@ -5902,11 +6116,19 @@ module znd
 					Pgas = p_b - crad*T_b**4/3d0
 					logPgas = log10(Pgas)
 					logT = log10(T_b)
-					call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-						xa, Pgas, logPgas, T_b, logT, &
+					!call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
+					!	xa, Pgas, logPgas, T_b, logT, &
+					!	rho_b, logRho, dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
+					!	res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+					!	d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+					call eosPT_get(& 
+						eos_handle, &
+						species, chem_id, net_iso, xa, &
+						Pgas, logPgas, T_b, logT, &
 						rho_b, logRho, dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
-						res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-						d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+						res, d_dlnd, d_dlnT, &
+						d_dxa, ierr)
+
 				
 					gamma1 = res(i_gamma1)	
 				endif
@@ -6105,14 +6327,16 @@ module znd
 				rho_b = rho0/0.69	!Base of envelope relation from gamma=5/3
 				T_b = T0
 				
-				call composition_info(species, chem_id, xa, xh, xhe, Zm, abar, zbar, z2bar, &
-					ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+				call composition_info( &
+					species, chem_id, xa, xh, xhe, Zm, &
+					abar, zbar, z2bar, z53bar, ye, mass_correction, & 
+					xsum, dabar_dx, dzbar_dx, dmc_dx)
 				logRho = log10(rho_b)
 				logT = log10(t_b)
-				call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-					xa, rho_b, logRho, t_b, logT, &
-					res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-					d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+				call eosDT_get( & 
+					eos_handle, species, chem_id, net_iso, xa, &
+					rho_b, logRho, t_b, logT, & 
+					res, d_dlnd, d_dlnT, d_dxa, ierr)
 				p_b = exp(res(i_lnPgas)) + crad*t_b**4/3d0
 				
 				H_p = 2*h_scale			!Pressure scale height (H_p) from layer thickness (h_scale)
@@ -6188,10 +6412,10 @@ module znd
         		rho0 = 10**(rho_sweep_log_min + &
         			(rho_sweep_log_max-rho_sweep_log_min)*(i-1d0)/(rho_sweep_num_steps-1d0))
 				logRho = log10(rho0)
-         		call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species, chem_id, net_iso, &
-         			xa, rho0, logRho, t0, logT, &
-         			res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-         			d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
+				call eosDT_get( & 
+					eos_handle, species, chem_id, net_iso, xa, &
+					rho0, logRho, t0, logT, & 
+					res, d_dlnd, d_dlnT, d_dxa, ierr)
          		p0 = exp(res(i_lnPgas)) + crad*t0**4/3d0
          		cs0 = sqrt(res(i_gamma1)*p0/rho0)
 				h_scale = p0/(rho0*grav_init)
@@ -6534,7 +6758,7 @@ program main
 	character (len=256) :: filename, final_iso
       
     do_my_solver = .true.  	
-    which_rates_choice = rates_NACRE_if_available
+    !which_rates_choice = rates_NACRE_if_available
 
     ierr = 0
     
