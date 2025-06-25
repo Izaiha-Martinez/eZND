@@ -111,7 +111,7 @@ module lane_emden_solver
 		
 		 write(*,*) 'Initializing subroutine lane_emden_init'
          write(*,*)        
-         write(*,*) 'vdpol'
+         !write(*,*) 'vdpol'
          !write(*,*) 'cash_karp'
 		 
          
