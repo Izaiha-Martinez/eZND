@@ -77,19 +77,6 @@ module wd_solver
 	real(dp), allocatable :: d_dxa_const_TRho(:,:)		!New declaration for eosPT_get
 
 
-	!isolve variables 
-	integer :: which_solver 
-	real(dp) :: y_min_wd, y_max_wd, y_min_env, y_max_env
-	!!! Dummy interfaces
-	!external :: null_jac, null_sjac, null_mas
-	!external :: null_decsol, null_decsols, null_decsolblk
-	!external :: null_fcn_blk_dble, null_jac_blk_dble
-	!!! Placeholders for decsol args (unused, so dummy values)
-	real(dp), pointer :: rpar_decsol(:) => null()
-	integer,  pointer :: ipar_decsol(:) => null()
-	real(dp), dimension(:), pointer :: lblk_dummy, dblk_dummy, ublk_dummy
-	real(dp), dimension(:), pointer :: uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy
-
 
     !Newton solver variables:
     real(dp), parameter :: one=1
@@ -285,10 +272,10 @@ module wd_solver
 			rpar_wd = 0
 			ipar_wd = 0
 
+			!Since I replaced cash_karp with dopri5 I also need to replace the work size 
 			!call cash_karp_work_sizes(nv_wd,liwork_wd,lwork_wd)
-			
-			lwork_wd = 14*nv_wd
-			liwork_wd = 4
+
+			call dopri5_work_sizes(nv_wd,nv_wd,liwork_wd,lwork_wd)
 			allocate(work_wd(lwork_wd), iwork_wd(liwork_wd))
 
 			iwork_wd = 0
@@ -467,20 +454,7 @@ module wd_solver
 			ierr_wd = 0
 			num_steps = 100
 
-			which_solver = 1 	
-			y_min_wd = -1e100
-			y_max_wd = 1e100
-			allocate(rpar_decsol(1))     ! dummy, unused
-			allocate(ipar_decsol(1))     ! dummy, unused
-			rpar_decsol = 0d0
-			ipar_decsol = 0
-
-			allocate(lblk_dummy(1));      lblk_dummy = 0d0
-			allocate(dblk_dummy(1));      dblk_dummy = 0d0
-			allocate(ublk_dummy(1));      ublk_dummy = 0d0
-			allocate(uf_lblk_dummy(1));   uf_lblk_dummy = 0d0
-			allocate(uf_dblk_dummy(1));   uf_dblk_dummy = 0d0
-			allocate(uf_ublk_dummy(1));   uf_ublk_dummy = 0d0
+			write(*,*) 'starting wd_integrate'
 
 			if(dbg) then
 				write(*,*) 'Starting integration'
@@ -504,20 +478,13 @@ module wd_solver
 				!   rtol_wd,atol_wd,itol_wd, &
 				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
 				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-				call isolve( &
-					which_solver, nv_wd, wd_derivs, x_wd, y_wd, xend_wd, &
-					h_wd, max_step_size_wd, max_steps_wd, &
-					rtol_wd, atol_wd, itol_wd, y_min_wd, y_max_wd, &
-					null_jac, 0, null_sjac, 0, 0, 0, 0, &
-					null_mas, 0, 0, 0, &
-					null_solout, iout_wd, &
-					null_decsol, null_decsols, null_decsolblk, &
-					0, rpar_decsol, 0, ipar_decsol, &
-					0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-					null_fcn_blk_dble, null_jac_blk_dble, &
-					work_wd, lwork_wd, iwork_wd, liwork_wd, &
-					lrpar_wd, rpar_wd, lipar_wd, ipar_wd, &
-					lout_wd, idid_wd)
+
+				call dopri5( &
+				   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
+				   h_wd,max_step_size_wd,max_steps_wd, &
+				   rtol_wd,atol_wd,itol_wd, &
+				   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
+				   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
 
 
 				!write(*,'(99ES20.10)') y_wd(1), y_wd(2), y_wd(3), y_wd(4)
@@ -562,6 +529,7 @@ module wd_solver
 				!write(*,*) x_wd, p, p0
 			end do
 
+			write(*,*) 'Exiting wd_integrate'
       	end subroutine wd_integrate
       	
       	subroutine wd_envelope(rho_c, pb_frac, m_c, m_env, rho_b, p_b, r_c, r_wd, t_sound)
@@ -571,23 +539,10 @@ module wd_solver
 			double precision, intent(inout) :: m_c, m_env, rho_b, p_b, r_c, r_wd, t_sound
  			integer :: i, num_steps
 
-			which_solver = 1 	
-			y_min_env = -1e100
-			y_max_env = 1e100
-			allocate(rpar_decsol(1))     ! dummy, unused
-			allocate(ipar_decsol(1))     ! dummy, unused
-			rpar_decsol = 0d0
-			ipar_decsol = 0
-
 			ierr_wd = 0
 			num_steps = 100
-			
-			allocate(lblk_dummy(1));      lblk_dummy = 0d0
-			allocate(dblk_dummy(1));      dblk_dummy = 0d0
-			allocate(ublk_dummy(1));      ublk_dummy = 0d0
-			allocate(uf_lblk_dummy(1));   uf_lblk_dummy = 0d0
-			allocate(uf_dblk_dummy(1));   uf_dblk_dummy = 0d0
-			allocate(uf_ublk_dummy(1));   uf_ublk_dummy = 0d0
+
+			write(*,*) 'starting wd_envelope'
 
 			if(dbg) then
 				write(*,*) 'Starting core integration'
@@ -608,20 +563,14 @@ module wd_solver
 				!   rtol_wd,atol_wd,itol_wd, &
 				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
 				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-				call isolve( &
-					which_solver, nv_wd, wd_derivs, x_wd, y_wd, xend_wd, &
-					h_wd, max_step_size_wd, max_steps_wd, &
-					rtol_wd, atol_wd, itol_wd, y_min_env, y_max_env, &
-					null_jac, 0, null_sjac, 0, 0, 0, 0, &
-					null_mas, 0, 0, 0, &
-					null_solout, iout_wd, &
-					null_decsol, null_decsols, null_decsolblk, &
-					0, rpar_decsol, 0, ipar_decsol, &
-					0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-					null_fcn_blk_dble, null_jac_blk_dble, &
-					work_wd, lwork_wd, iwork_wd, liwork_wd, &
-					lrpar_wd, rpar_wd, lipar_wd, ipar_wd, &
-					lout_wd, idid_wd)
+
+				call dopri5( &
+				   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
+				   h_wd,max_step_size_wd,max_steps_wd, &
+				   rtol_wd,atol_wd,itol_wd, &
+				   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
+				   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
+
 				if (idid_wd /= 1) then ! trouble
 					write(*,*) 'idid', idid_wd
 					stop 1
@@ -720,20 +669,14 @@ module wd_solver
 				!   rtol_wd,atol_wd,itol_wd, &
 				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
 				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-				call isolve( &
-					which_solver, nv_wd, envelope_derivs, x_wd, y_wd, xend_wd, &
-					h_wd, max_step_size_wd, max_steps_wd, &
-					rtol_wd, atol_wd, itol_wd, y_min_env, y_max_env, &
-					null_jac, 0, null_sjac, 0, 0, 0, 0, &
-					null_mas, 0, 0, 0, &
-					null_solout, iout_wd, &
-					null_decsol, null_decsols, null_decsolblk, &
-					0, rpar_decsol, 0, ipar_decsol, &
-					0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-					null_fcn_blk_dble, null_jac_blk_dble, &
-					work_wd, lwork_wd, iwork_wd, liwork_wd, &
-					lrpar_wd, rpar_wd, lipar_wd, ipar_wd, &
-					lout_wd, idid_wd)
+
+				call dopri5( &
+				   nv_wd,envelope_derivs,x_wd,y_wd,xend_wd, &
+				   h_wd,max_step_size_wd,max_steps_wd, &
+				   rtol_wd,atol_wd,itol_wd, &
+				   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
+				   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
+				
 				if (idid_wd /= 1) then ! trouble
 					write(*,*) 'idid', idid_wd
 					stop 1
@@ -774,7 +717,8 @@ module wd_solver
 			else
 				r_wd = x_wd
 			endif
-			
+
+			write(*,*) 'Exiting wd_envelope'
       	end subroutine wd_envelope
       	
 		double precision function find_rhoc_func(x, dfdx, lrpar, rpar, lipar, ipar, ierr)
