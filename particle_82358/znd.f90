@@ -660,6 +660,8 @@ module znd
          !use net_lib
          !use rates_def, only: rates_reaction_id_max
          
+		write(*,*) 'Starting setup_net'
+
          ierr = 0
          handle = alloc_net_handle(ierr)
          if (ierr /= 0) then
@@ -761,7 +763,8 @@ module znd
          write(*,*) 'num_reactions:',num_reactions
          
          !ierr = 0
-         !call get_net_ptr(handle, g, ierr)        
+         !call get_net_ptr(handle, g, ierr)      
+		write(*,*) 'Exiting setup_net'
       end subroutine setup_net
       
    	!Subroutine to output the Hugoniot curve (in the P-V plane) given a final 
@@ -1151,6 +1154,9 @@ module znd
 
 			double precision :: p0, e0, logRho, logT, mu0
 			integer :: i,j 								!Loop variables
+
+		 	write(*,*) 
+		 	write(*,*) 'Starting solve_neumann'
 		
 			if(.not.associated(xa)) then
 				write(*,*) 'Composition vector xa(:) not initialized before CJ call'
@@ -1271,6 +1277,7 @@ module znd
 				stop 2
 			end if
 			
+			write(*,*)
 			write(*,'(a20,3ES15.5)') 'Neumann solution:', x_newton
 			rho_neumann = x_newton(1,1)*rho0
 			t_neumann = x_newton(2,1)*t0
@@ -1302,6 +1309,8 @@ module znd
             write(*,*) 'Deallocation error 3 in solve_neumann()'
             stop 1
          endif  		
+		 write(*,*)
+		 write(*,*) 'Exiting solve_neumann'
       end subroutine solve_neumann
       	
       	!Begin - Subroutines needed by the newton solver------------------------------------------------
@@ -1479,7 +1488,7 @@ module znd
 		
 		call eos_get_helm_results(&
 			Xh, abar, zbar, Rho, logRho, T, logT, &
-			1d0, 0d0, .false., .false., &
+			1d0, 0d0, .true., .true., &
 			res_helm, ierr)
     	d2e_drho2 = res_helm(h_dedd)
     	d2e_drhoT = res_helm(h_dedt)
@@ -2385,10 +2394,10 @@ module znd
         P = exp(res(i_lnPgas)) + (crad*T**4)/3d0			!Total pressure of gas
         energy = exp(res(i_lnE)) 							!Internal erg/g of gas
         gamma1 = res(i_gamma1)
-        
+
 		call eos_get_helm_results(&
 			Xh, abar, zbar, Rho, logRho, T, logT, &
-			1d0, 0d0, .false., .false., &
+			1d0, 0d0, .true., .true., &
 			res_helm, ierr)
      	if (ierr /= 0) then
             write(*,*) 'failed in eos_get_helm_results', ierr
@@ -3711,7 +3720,7 @@ module znd
         
         call eos_get_helm_results(&
 			Xh, abar, zbar, Rho, logRho, burn_T, logT, &
-			1d0, 0d0, .false., .false., &
+			1d0, 0d0, .true., .true., &
 			res_helm, ierr)
 
      	if (ierr /= 0) then
@@ -4243,6 +4252,9 @@ module znd
       double precision, pointer, dimension(:) :: orig_vars, orig_derivs
     	integer :: j, k
       
+	  write(*,*)
+	  write(*,*) 'Starting znd_integrate'
+
       if(do_pathological.and.use_variable_linearization_ratio) then
          allocate(orig_vars(num_vars), orig_derivs(num_vars))
          orig_vars = 0d0
@@ -4255,15 +4267,24 @@ module znd
       iwork_isolve = 0
 		work_isolve = 0
 		t_start = x_start				!Starting time?
-		t_end = x_end		!Ending time (s)?
+		t_end = x_end					!Ending time (s)?
 		burn_time = x_end - x_start
 		
+		!write(*,*)
+		write(*,*) 't_start = x_start =', t_start 
+		write(*,*) 't_end = x_end =', t_end 
+		write(*,*) 'burn_time = x_end - x_start', burn_time 
+
+
 		vars(1:species) = xa		!Composition
 		vars(species+1) = burn_rho	!Density (g/cm^3)
 		vars(species+2) = burn_T	!Temperature (K)
 		vars(species+3) = burn_u	!Velocity in shock frame (cm/s)
 		
 		if(do_blowout) then
+			write(*,*)
+			write(*,*) 'do_blowout is true, running...'
+
 			vars(species+4) = uy_init	!Initial radial blowout velocity (cm/s)
 			if(use_uy_ux_ratio) then
 				vars(species+4) = uy_ux_ratio*vars(species+3)
@@ -4272,19 +4293,33 @@ module znd
 			!h_scale = P0/(rho0*grav)	!With gravity
 			vars(species+5) = h_scale 	!Initial radial scale height (cm)
 		else if(do_blowout_local) then
+			write(*,*)
+			write(*,*) 'do_blowout_local is true, running...'
+
 			vars(species+4) = cs0	!Initial radial blowout velocity (cm/s)
 			vars(species+5) = h_scale 	!Initial radial scale height (cm)
 			vars(species+6) = delta_y_init	!Initial length scale for computing dP/dy (cm)
 		endif
 		if(do_curvature) then
-			if(use_rc_hs_scaling) r_curve = rc_hs_factor*h_scale
-			if(.not.use_he_clavin) vars(num_vars) = r_curve
+			write(*,*)
+			write(*,*) 'do_curvature is true, running...'
+
+			if(use_rc_hs_scaling) then 
+				r_curve = rc_hs_factor*h_scale
+				write(*,*) 'r_curve = rc_hs_factor*h_scale =', r_curve
+			endif
+
+			if(.not.use_he_clavin) then 
+				vars(num_vars) = r_curve
+				write(*,*) 'User-specified r_curve = ', r_curve
+			endif
 		endif
 	
 		sonic_loc = 0d0
 		max_mach = 0d0
 		gone_sonic = .false.
 		
+		write(*,*) 'Starting the isolve loop, running...'
 		do j=1,num_steps
    		!Evenly spaced timesteps in log
    		!t_start = h_search_xmax*10**(log10(h_search_xmax)*((k-1)*1d0/num_steps-1))
@@ -4293,7 +4328,10 @@ module znd
    		t_start = x_start + burn_time**((j-1)*1d0/num_steps)
    		t_end = x_start + burn_time**(j*1d0/num_steps)
 		
-   		!write(*,*) x_start, x_end
+		!write(*,*)
+   		!write(*,*) 'Step = ', j
+		!write(*,*) 't_start = ', t_start 
+		!write(*,*) 't_end = ', t_end 
 
    		call isolve( &
    			which_solver, num_vars, znd_derivs, t_start, vars, t_end, &
@@ -4321,14 +4359,35 @@ module znd
    			write(*,*)
    			exit
    		endif
-		
+	
+
    		!write(*,*) t_start, t_end, rpar(2)
+
+		!write(*,*) 'shape of vars = ', shape(vars)
+		!write(*,*) 'rho:vars(207) = ', vars(207)
+		!write(*,*) 'temp:vars(208) = ', vars(208)
+		!write(*,*) 'u:vars(209) = ', vars(209)
+		
+		!write(*,*) 'shape of rpar = ', shape(rpar)
+		!write(*,*) 'P:rpar(1) = ', rpar(1)
+		!write(*,*) 'u/cs:rpar(2) = ', rpar(2)
+		!write(*,*) 'Etot:rpar(8) = ', rpar(8)
+		!write(*,*) 'q:rpar(9) = ', rpar(9)
+		!write(*,*) 'gamma1:rpar(10) = ', rpar(10)
+		
+		
 		
    		if((rpar(2).gt.max_mach).and.(.not.gone_sonic)) then
    			sonic_loc = t_end
    			pathological_loc = t_end
    			max_mach = rpar(2)
 			
+			write(*,*)
+			write(*,*) 'rpar(2).gt.max_mach is true'
+			write(*,*) 'rpar(2) = ', rpar(2)
+			write(*,*) 'max_mach = ', max_mach
+			write(*,*) 'not.gone_sonic is true'
+
    			!If we're traversing the pathological point then do that here if we reach the
    			!sonic limit used in pathological detonations:
    			if(do_pathological.and.(rpar(2).ge.sonic_limit_pathological)) then
@@ -4354,9 +4413,16 @@ module znd
 			
 		end do !Integration loop
 		
+
+		write(*,*)
+		write(*,*) 'ZND integration loop finished'
+
 		!Linearize the solution and resume integration:
 		if(do_pathological.and.(rpar(2).ge.sonic_limit_pathological)) then
 		
+			write(*,*)
+			write(*,*) 'Exited isolve, now linearize the solution'
+
 			!Try a set of pathological_linearization_ratio values and see whether we
 			!successfully jump over the pathological point:
 			if(use_variable_linearization_ratio) then
@@ -4364,6 +4430,8 @@ module znd
 				orig_derivs = rpar(21:21+num_vars-1)
             !write(*,*) 'orig_derivs(1)', orig_derivs(1), rpar(21)
             !write(*,*) 'orig_derivs(num_vars)', orig_derivs(num_vars), rpar(21+num_vars), rpar(21+num_vars-1)
+				
+			write(*,*) 'Entering loop'
 				do k=1,20
                if(associated(orig_vars)) write(*,*) 'associated(orig_vars)'
                if(associated(orig_derivs)) write(*,*) 'associated(orig_derivs)'
@@ -4728,6 +4796,8 @@ module znd
             stop 1
          end if
          
+		write(*,*) 'Starting do_my_burn'
+
          ! set mass fractions -- must add to 1.0
          xa = 0d0
          write(*,*)
@@ -4754,7 +4824,7 @@ module znd
          vars(1:species) = xa			!Composition
          vars(species+1) = 1d0
          vars(species+2) = 0d0
-         !write(*,*) 'sum(xa) =', sum(xa)										!Added these lines, remove later
+         write(*,*) 'sum of initial composition =', sum(xa)
 
          write(*,*) 'here?'
          
@@ -4768,39 +4838,40 @@ module znd
 		write(*,*) 
 		!Before eosDT_get, res(i_lnPgas) & res(i_gamma1) have values but get set to NaN afterwards
 		write(*,*) 'Before call eosDT_get'
-		!write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
-		!write(*,*) 'p0 values: crad =', crad
-		!write(*,*) 'p0 values: t0 =', t0
-		!write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
-		!write(*,*) 'cs0 values: p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
-		!write(*,*) 'cs0 values: rho0 =', rho0
-		!write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
-		!write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
+		write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
+		write(*,*) 'p0 values: crad =', crad
+		write(*,*) 'p0 values: t0 =', t0
+		write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
+		write(*,*) 'cs0 values: p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		write(*,*) 'cs0 values: rho0 =', rho0
+		write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
 		
 		write(*,*) 
+
 		write(*,*) 'Variable of eosDT_get'
 		write(*,*) 'eos_handle =', eos_handle
 		write(*,*) 'species =', species
 		!write(*,*) 'chem_id =', chem_id
 		!write(*,*) 'net_iso =', net_iso
 		!write(*,*) 'xa =', xa
-		!write(*,*) 'rho0 =', rho0
-		!write(*,*) 'logRho =', logRho
-		!write(*,*) 't0 =', t0
-		!write(*,*) 'logT =', logT
+		write(*,*) 'rho0 =', rho0
+		write(*,*) 'logRho =', logRho
+		write(*,*) 't0 =', t0
+		write(*,*) 'logT =', logT
 		
-		!write(*,*) 'res shape = ', shape(res)
-		!write(*,*) 'res =', res
-		!write(*,*) 'd_dlnd =', d_dlnd
-		!write(*,*) 'size d_dlnd =', size(d_dlnd)
-		!write(*,*) 'd_dlnT =', d_dlnT
-		!write(*,*) 'size d_dlnT =', size(d_dlnT)
+		write(*,*) 'res shape = ', shape(res)
+		write(*,*) 'res =', res
+		write(*,*) 'd_dlnd =', d_dlnd
+		write(*,*) 'size d_dlnd =', size(d_dlnd)
+		write(*,*) 'd_dlnT =', d_dlnT
+		write(*,*) 'size d_dlnT =', size(d_dlnT)
 		!write(*,*) 'd_dxa =', d_dxa
 		write(*,*) 'size d_dxa =', size(d_dxa)
 		write(*,*) 'shape d_dxa =', shape(d_dxa)
-		!write(*,*) 'ierr =', ierr
-		!write(*,*) 'i_lnPgas =', i_lnPgas
-		!write(*,*) 'i_gamma1 =', i_gamma1
+		write(*,*) 'ierr =', ierr
+		write(*,*) 'i_lnPgas =', i_lnPgas
+		write(*,*) 'i_gamma1 =', i_gamma1
 
         
 		allocate(d_dxa(num_eos_d_dxa_results,species),stat=info)
@@ -4818,16 +4889,17 @@ module znd
 
 		write(*,*)
 		write(*,*) 'After call eosDT_get'
-		!write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
-		!write(*,*) 'p0 values: crad =', crad
-		!write(*,*) 'p0 values: t0 =', t0
-		!write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
-		!write(*,*) 'cs0 values: p0 =', p0
-		!write(*,*) 'cs0 values: rho0 =', rho0
-		!write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
-		!write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
+		write(*,*) 'p0 values: res(i_lnPgas) =', res(i_lnPgas)
+		write(*,*) 'p0 values: crad =', crad
+		write(*,*) 'p0 values: t0 =', t0
+		write(*,*) 'cs0 values: res(i_gamma1) =', res(i_gamma1)
+		write(*,*) 'cs0 values: p0 =', p0
+		write(*,*) 'cs0 values: rho0 =', rho0
+		write(*,*) 'p0 =', exp(res(i_lnPgas)) + crad*t0**4/3d0
+		write(*,*) 'cs0 =', sqrt(res(i_gamma1)*(exp(res(i_lnPgas)) + crad*t0**4/3d0)/rho0)
 		
 		write(*,*) 
+		
 		write(*,*) 'Variable of eosDT_get'
 		write(*,*) 'eos_handle =', eos_handle
 		write(*,*) 'species =', species
@@ -4839,20 +4911,21 @@ module znd
 		!write(*,*) 't0 =', t0
 		!write(*,*) 'logT =', logT
 		
-		!write(*,*) 'res shape = ', shape(res)
-		!write(*,*) 'res =', res
-		!write(*,*) 'd_dlnd =', d_dlnd
-		!write(*,*) 'size d_dlnd =', size(d_dlnd)
-		!write(*,*) 'd_dlnT =', d_dlnT
-		!write(*,*) 'size d_dlnT =', size(d_dlnT)
+		write(*,*) 'res shape = ', shape(res)
+		write(*,*) 'res =', res
+		write(*,*) 'd_dlnd =', d_dlnd
+		write(*,*) 'size d_dlnd =', size(d_dlnd)
+		write(*,*) 'd_dlnT =', d_dlnT
+		write(*,*) 'size d_dlnT =', size(d_dlnT)
 		!write(*,*) 'd_dxa =', d_dxa
 		write(*,*) 'size d_dxa =', size(d_dxa)
 		write(*,*) 'shape d_dxa =', shape(d_dxa)
-		!write(*,*) 'ierr =', ierr
-		!write(*,*) 'i_lnPgas =', i_lnPgas
-		!write(*,*) 'i_gamma1 =', i_gamma1
+		write(*,*) 'ierr =', ierr
+		write(*,*) 'i_lnPgas =', i_lnPgas
+		write(*,*) 'i_gamma1 =', i_gamma1
 
-
+		write(*,*)
+		
 		 write(*,*) 'Ambient conditions:'
 		 write(*,'(a20,ES25.9)') 'rho0 (g/cm^3):',rho0
 		 write(*,'(a20,ES25.9)') 'T0 (K):',t0
@@ -4874,6 +4947,10 @@ module znd
          !Here's where we'd call the solve_cj subroutine to find the initial conditions
          !for the ZND integrator:
          if(do_cj) then
+		 	write(*,*) 
+		 	write(*,*) 'do_cj is turned on, running...'
+		 	write(*,*) 
+
          	call solve_cj
          	call solve_neumann
          	write(*,'(a20,ES25.9)') 'rho_neumann:',rho_neumann
@@ -4895,7 +4972,12 @@ module znd
          !If we just specify the detonation velocity and initial conditions, then we
          !just need to find the neumann point:
          if(do_neumann) then
+		 	write(*,*) 
+		 	write(*,*) 'do_neumann is turned on, running...'
+
          	call solve_neumann
+
+		 	write(*,*) 
          	write(*,'(a20,ES25.9)') 'rho_neumann:',rho_neumann
          	write(*,'(a20,ES25.9)') 't_neumann:',t_neumann
          	write(*,'(a20,ES25.9)') 'p_neumann:',p_neumann
@@ -4999,6 +5081,8 @@ module znd
          write(*,'(a20,i25)') 'max_steps',max_steps
          
          if(do_constp) then
+		 	write(*,*) 
+		 	write(*,*) 'do_constp is turned on, running'
 			call eosDT_get( & 
 				eos_handle, species, chem_id, net_iso, xa, &
 				burn_Rho, logRho, burn_T, logT, & 
@@ -5021,6 +5105,8 @@ module znd
          	 write(profile_io,*)
 			 
 			 if(do_blowout) then
+			 	write(*,*) 
+			 	write(*,*) 'do_blowout is true, running...'
 				write(profile_io,'(999a30)',advance='no') 'Step', 'Position (cm)', &
 				chem_isos% name(chem_id(1:species)), 'rho (g/cm^3)', 'T (K)', 'u (cm/s)',&
 				'u_y (cm/s)', 'H_scale (cm)'
@@ -5068,6 +5154,8 @@ module znd
          
          
         if(do_cjstate_only) then 
+			write(*,*)
+			write(*,*) 'do_cjstate_only is true, running...'
         	write(*,*) 'Sweeping through rho - finding naive CJ state only' 
         	        
         	!t0 = rho_sweep_t0
@@ -5118,6 +5206,8 @@ module znd
 					t_cj, p_cj, e_cj
 			end do
         else if(do_constp) then
+			write(*,*)
+			write(*,*) 'do_constp is true, running...'
 			do i=1,8
          		t_start = 0d0 			!Starting time?
          		t_end = burn_time		!Ending time (s)?
@@ -5162,6 +5252,8 @@ module znd
         
         	end do
         else if(do_znd) then
+			write(*,*)
+			write(*,*) 'do_znd is true, running...'
 			t_start = 0d0 			!Starting location
          	t_end = burn_time		!Ending location
          	output_profile = .true.
@@ -6713,7 +6805,7 @@ module znd
         close(sweep_io)
         close(data_in)
         !close(report_io)
-        
+		write(*,*) 'Exiting setup_net'
       end subroutine do_my_burn
       
       subroutine cleanup
