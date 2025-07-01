@@ -419,6 +419,7 @@ module znd
 				num_isos_for_Xcj, names_of_isos_for_Xcj, values_for_Xcj, &
 				max_steps, rtol_init, atol_init, do_cjstate_only, do_cjstate_only2
 				
+			write(*,*) '************************* Starting read_inlist *************************'
 			filename = 'inlist_znd'
 			dbg = .false.
       
@@ -527,7 +528,9 @@ module znd
       			write(*,*) 'Can only choose either do_znd = .true. or do_constp = .true'
       			stop 1
       		endif
-      		     		
+			
+			write(*,*) '************************* Exiting read_inlist *************************'
+			write(*,*) 
 		end subroutine read_inlist  
       
 		subroutine initialize
@@ -556,7 +559,7 @@ module znd
          
 			ierr = 0
 
-			write(*,*) 'Starting Subroutine initialize'
+			write(*,*) '************************* Starting initialize *************************'
 			!write(*,*) 'info = ', info 
 			!write(*,*) 'ierr = ', ierr
 
@@ -577,6 +580,7 @@ module znd
 			!call crlibm_init()
 			call math_init()
 
+			write(*,*) 'my_mesa_dir =', my_mesa_dir
 			call const_init(my_mesa_dir,ierr)
 			if (ierr /= 0) then
 				write(*,*) 'const_init failed'
@@ -626,7 +630,7 @@ module znd
 			!end if
 			!write(*,*) '3'
 			
-			 call rates_init('reactions.list', '', '', & 
+			call rates_init('reactions.list', '', 'rate_table', & 
 				.false., .false., &
 				'', '', '', & 
 				ierr)
@@ -651,7 +655,7 @@ module znd
 			!   return
 			!end if 
 		
-      	write(*,*) 'Exiting initialize'
+      	write(*,*) '************************* Exiting initialize *************************'
       	write(*,*)
       end subroutine initialize
       
@@ -660,7 +664,8 @@ module znd
          !use net_lib
          !use rates_def, only: rates_reaction_id_max
          
-		write(*,*) 'Starting setup_net'
+		 write(*,*) 
+      	 write(*,*) '************************* Starting setup_net *************************'
 
          ierr = 0
          handle = alloc_net_handle(ierr)
@@ -668,7 +673,7 @@ module znd
             write(*,*) 'alloc_net_handle failed'
             return
          end if
-         
+
          call net_start_def(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_start_def failed'
@@ -685,7 +690,7 @@ module znd
             write(*,*) 'read_net_file failed ', trim(net_file)
             return
          end if
-         
+		 
          call net_finish_def(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_finish_def failed'
@@ -704,11 +709,11 @@ module znd
             return
          end if
          
-         !call net_setup_tables(handle, 'rate_tables', ierr)
-         !if (ierr /= 0) then
-         !   write(*,*) 'net_setup_tables failed'
-         !   return
-         !end if
+         call net_setup_tables(handle, '', ierr)
+         if (ierr /= 0) then
+            write(*,*) 'net_setup_tables failed'
+            return
+         end if
          
          species = net_num_isos(handle, ierr)
          if (ierr /= 0) then
