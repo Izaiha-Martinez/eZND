@@ -55,8 +55,8 @@ module wd_solver
 	integer :: num_isos_for_Xinit, species_wd
 	character(len=iso_name_length) :: names_of_isos_for_Xinit(max_num_isos_for_Xinit)
     double precision :: values_for_Xinit(max_num_isos_for_Xinit)
-	double precision ::  xh, xhe, zm, abar, zbar, z2bar, ye, xsum, mass_correction
-	double precision :: z53bar !new variable in composition_info
+	double precision :: xh, xhe, zm, abar, zbar, z2bar, ye, xsum, mass_correction
+	double precision :: z53bar 																!new variable in composition_info
 	 
 	!EOS variables:
     !Common named variables:
@@ -123,32 +123,32 @@ module wd_solver
 			integer :: ierr
 			
 			do_numerical_jacobian = .true.   
-      	which_decsol = lapack
+      		which_decsol = lapack
       		
 			call decsol_option_str(which_decsol, decsol_option_name, ierr)
 			if (ierr /= 0) return
          	
-         write(*,*) 'Newton solver using ' // trim(decsol_option_name)
-         write(*,*)
+         	write(*,*) 'Newton solver using ' // trim(decsol_option_name)
+         	!write(*,*)
          	
-         neq = nvar*nz
+         	neq = nvar*nz
 			allocate(equ1(neq), x1(neq), xold1(neq), dx1(neq), &
 				xscale1(neq), y1(ldy*nsec), stat=ierr)
 			if (ierr /= 0) stop 1
          
 			x(1:nvar,1:nz) => x1(1:neq)
-      	xold(1:nvar,1:nz) => xold1(1:neq)
-      	dx(1:nvar,1:nz) => dx1(1:neq)
-      	equ(1:nvar,1:nz) => equ1(1:neq)
-      	xscale(1:nvar,1:nz) => xscale1(1:neq)
-      	y(1:ldy,1:nsec) => y1(1:ldy*nsec)
+			xold(1:nvar,1:nz) => xold1(1:neq)
+			dx(1:nvar,1:nz) => dx1(1:neq)
+			equ(1:nvar,1:nz) => equ1(1:neq)
+			xscale(1:nvar,1:nz) => xscale1(1:neq)
+			y(1:ldy,1:nsec) => y1(1:ldy*nsec)
 		end subroutine newton_init
 		
 		subroutine init_mesa_modules()
 			implicit none
 			
-			write(*,*) 'Initializing WD builder (subroutine init_mesa_modules)'
 			write(*,*)
+			write(*,*) 'Initializing WD builder (subroutine init_mesa_modules)'
 		
 			!mesa_dir = '/Users/Kevin/mesa'
 			!mesa_dir = '/Users/Kevin/mesa_5271'
@@ -162,7 +162,7 @@ module wd_solver
 			!EOS options:
 			eos_file_prefix = 'mesa'
 			use_cache = .true.
-         species_wd = 3
+         	species_wd = 3
 
 			call chem_init('isotopes.data', ierr_wd)
 			if (ierr_wd /= 0) then
@@ -193,7 +193,7 @@ module wd_solver
 
 			call newton_init()
 			write(*,*) 'Exiting init_mesa_modules'
-			write(*,*)
+			!write(*,*)
 		end subroutine init_mesa_modules
       
       subroutine wd_init()
@@ -202,6 +202,7 @@ module wd_solver
 			ipar_wd => ipar_ary
 			rpar_wd => rpar_ary
 
+			write(*,*)
 			write(*,*) 'Starting WD_init'
 
 			y_wd => y_ary
@@ -257,11 +258,18 @@ module wd_solver
 			end do
 			write(*,*)
 
+			!write(*,*) 'abar =', abar
+			!write(*,*) 'zbar =', zbar
+			!write(*,*) 'zm =', zm
+			!write(*,*) 'z53bar =', z53bar
 			call composition_info( &
 				species_wd, chem_id, xa_wd, xh, xhe, zm, &
 				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
 				xsum, dabar_dx, dzbar_dx, dmc_dx)
-			!write(*,*) abar, zbar, zm
+			write(*,*) 'abar =', abar
+			write(*,*) 'zbar =', zbar
+			write(*,*) 'zm =', zm
+			write(*,*) 'z53bar =', z53bar
 
 			lout_wd = 6
 			max_steps_wd = 10000

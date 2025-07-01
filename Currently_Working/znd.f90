@@ -419,6 +419,7 @@ module znd
 				num_isos_for_Xcj, names_of_isos_for_Xcj, values_for_Xcj, &
 				max_steps, rtol_init, atol_init, do_cjstate_only, do_cjstate_only2
 				
+			write(*,*) '************************* Starting read_inlist *************************'
 			filename = 'inlist_znd'
 			dbg = .false.
       
@@ -527,7 +528,9 @@ module znd
       			write(*,*) 'Can only choose either do_znd = .true. or do_constp = .true'
       			stop 1
       		endif
-      		     		
+			
+			write(*,*) '************************* Exiting read_inlist *************************'
+			write(*,*) 
 		end subroutine read_inlist  
       
 		subroutine initialize
@@ -556,7 +559,7 @@ module znd
          
 			ierr = 0
 
-			write(*,*) 'Starting Subroutine initialize'
+			write(*,*) '************************* Starting initialize *************************'
 			!write(*,*) 'info = ', info 
 			!write(*,*) 'ierr = ', ierr
 
@@ -577,6 +580,7 @@ module znd
 			!call crlibm_init()
 			call math_init()
 
+			write(*,*) 'my_mesa_dir =', my_mesa_dir
 			call const_init(my_mesa_dir,ierr)
 			if (ierr /= 0) then
 				write(*,*) 'const_init failed'
@@ -626,8 +630,8 @@ module znd
 			!end if
 			!write(*,*) '3'
 			
-			 call rates_init('reactions.list', '', '', & 
-				.false., .false., &
+			call rates_init('reactions.list', '', 'rate_table', & 
+				.true., .false., &
 				'', '', '', & 
 				ierr)
 			if (ierr /= 0) then
@@ -651,7 +655,7 @@ module znd
 			!   return
 			!end if 
 		
-      	write(*,*) 'Exiting initialize'
+      	write(*,*) '************************* Exiting initialize *************************'
       	write(*,*)
       end subroutine initialize
       
@@ -660,7 +664,8 @@ module znd
          !use net_lib
          !use rates_def, only: rates_reaction_id_max
          
-		write(*,*) 'Starting setup_net'
+		 write(*,*) 
+      	 write(*,*) '************************* Starting setup_net *************************'
 
          ierr = 0
          handle = alloc_net_handle(ierr)
@@ -668,7 +673,7 @@ module znd
             write(*,*) 'alloc_net_handle failed'
             return
          end if
-         
+
          call net_start_def(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_start_def failed'
@@ -685,7 +690,9 @@ module znd
             write(*,*) 'read_net_file failed ', trim(net_file)
             return
          end if
-         
+		 
+		 write(*,*) 'net_finish_def'
+
          call net_finish_def(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_finish_def failed'
@@ -698,17 +705,20 @@ module znd
       	 allocate(which_rates(rates_reaction_id_max))
          which_rates(:) = which_rates_choice
 
+		 !This is no longer in MESA, from what I can tell the network sets the reaction rates 
          !call net_set_which_rates(handle, which_rates, ierr)
-         if (ierr /= 0) then
-            write(*,*) 'net_set_which_rate_f17pg failed'
-            return
-         end if
-         
-         !call net_setup_tables(handle, 'rate_tables', ierr)
          !if (ierr /= 0) then
-         !   write(*,*) 'net_setup_tables failed'
+         !   write(*,*) 'net_set_which_rate_f17pg failed'
          !   return
          !end if
+         
+		 write(*,*) 'net_setup_tables'
+
+         call net_setup_tables(handle, '', ierr)
+         if (ierr /= 0) then
+            write(*,*) 'net_setup_tables failed'
+            return
+         end if
          
          species = net_num_isos(handle, ierr)
          if (ierr /= 0) then
@@ -733,12 +743,16 @@ module znd
          
          allocate(rtol(num_vars), atol(num_vars))
          
+		write(*,*) 'get_chem_id_table_ptr'
+
          call get_chem_id_table_ptr(handle, chem_id, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in get_chem_id_table_ptr'
             return
          end if
          
+		write(*,*) 'get_net_iso_table_ptr'
+
          call get_net_iso_table_ptr(handle, net_iso, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in get_net_iso_table_ptr'
@@ -751,20 +765,23 @@ module znd
             return
          end if
 
+		 !Mesa no longer uses work arrays in net_get 
          !lwork_net = net_work_size(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in net_work_size'
             return
          end if
          
-         allocate(work_net(lwork_net))
+         !allocate(work_net(lwork_net))
          
          write(*,*) 'species:',species
          write(*,*) 'num_reactions:',num_reactions
          
          !ierr = 0
          !call get_net_ptr(handle, g, ierr)      
-		write(*,*) 'Exiting setup_net'
+
+      	write(*,*) '************************* Exiting setup_net *************************'
+		write(*,*)
       end subroutine setup_net
       
    	!Subroutine to output the Hugoniot curve (in the P-V plane) given a final 
@@ -4382,11 +4399,11 @@ module znd
    			pathological_loc = t_end
    			max_mach = rpar(2)
 			
-			write(*,*)
-			write(*,*) 'rpar(2).gt.max_mach is true'
-			write(*,*) 'rpar(2) = ', rpar(2)
-			write(*,*) 'max_mach = ', max_mach
-			write(*,*) 'not.gone_sonic is true'
+			!write(*,*)
+			!write(*,*) 'rpar(2).gt.max_mach is true'
+			!write(*,*) 'rpar(2) = ', rpar(2)
+			!write(*,*) 'max_mach = ', max_mach
+			!write(*,*) 'not.gone_sonic is true'
 
    			!If we're traversing the pathological point then do that here if we reach the
    			!sonic limit used in pathological detonations:
@@ -4796,7 +4813,8 @@ module znd
             stop 1
          end if
          
-		write(*,*) 'Starting do_my_burn'
+		write(*,*)
+		write(*,*) '************************* Starting do_my_burn *************************'
 
          ! set mass fractions -- must add to 1.0
          xa = 0d0
@@ -6805,7 +6823,8 @@ module znd
         close(sweep_io)
         close(data_in)
         !close(report_io)
-		write(*,*) 'Exiting setup_net'
+     	write(*,*) '************************* Exiting do_my_burn *************************'
+		write(*,*)
       end subroutine do_my_burn
       
       subroutine cleanup
