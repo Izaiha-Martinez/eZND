@@ -1,13 +1,12 @@
 #Compiled object files
 *.o
 *.mod
+*.smod
 
 #Output files
 *.data
 *.dat
-
-#My Save Files 
-*.csv 
+*.bin
 
 #Executables
 run_profiler
@@ -15,3 +14,14 @@ run_new
 run_le
 run_wd
 test
+
+#My Save Files 
+*.csv 
+
+#My foldeers
+/0.Original
+/test_miles
+/Miles_Compare
+/particle_*
+
+*ipynb

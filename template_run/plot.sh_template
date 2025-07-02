@@ -1,6 +1,0 @@
-for n in 82358 82391 82419 82443 85020 85035 85041 85234 85239 85252 97202 97233 97252
-do
-	python plot.py $n
-    mv plot.png plots/particle$n.png
-    mv log_plot.png plots/particle_log$n.png
-done

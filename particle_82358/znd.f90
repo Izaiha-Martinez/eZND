@@ -691,6 +691,8 @@ module znd
             return
          end if
 		 
+		 write(*,*) 'net_finish_def'
+
          call net_finish_def(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_finish_def failed'
@@ -703,12 +705,15 @@ module znd
       	 allocate(which_rates(rates_reaction_id_max))
          which_rates(:) = which_rates_choice
 
+		 !This is no longer in MESA, from what I can tell the network sets the reaction rates 
          !call net_set_which_rates(handle, which_rates, ierr)
-         if (ierr /= 0) then
-            write(*,*) 'net_set_which_rate_f17pg failed'
-            return
-         end if
+         !if (ierr /= 0) then
+         !   write(*,*) 'net_set_which_rate_f17pg failed'
+         !   return
+         !end if
          
+		 write(*,*) 'net_setup_tables'
+
          call net_setup_tables(handle, '', ierr)
          if (ierr /= 0) then
             write(*,*) 'net_setup_tables failed'
@@ -738,12 +743,16 @@ module znd
          
          allocate(rtol(num_vars), atol(num_vars))
          
+		write(*,*) 'get_chem_id_table_ptr'
+
          call get_chem_id_table_ptr(handle, chem_id, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in get_chem_id_table_ptr'
             return
          end if
          
+		write(*,*) 'get_net_iso_table_ptr'
+
          call get_net_iso_table_ptr(handle, net_iso, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in get_net_iso_table_ptr'
@@ -756,20 +765,23 @@ module znd
             return
          end if
 
+		 !Mesa no longer uses work arrays in net_get 
          !lwork_net = net_work_size(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in net_work_size'
             return
          end if
          
-         allocate(work_net(lwork_net))
+         !allocate(work_net(lwork_net))
          
          write(*,*) 'species:',species
          write(*,*) 'num_reactions:',num_reactions
          
          !ierr = 0
          !call get_net_ptr(handle, g, ierr)      
-		write(*,*) 'Exiting setup_net'
+
+      	write(*,*) '************************* Exiting setup_net *************************'
+		write(*,*)
       end subroutine setup_net
       
    	!Subroutine to output the Hugoniot curve (in the P-V plane) given a final 
@@ -4334,8 +4346,8 @@ module znd
    		t_end = x_start + burn_time**(j*1d0/num_steps)
 		
 		!write(*,*)
-   		!write(*,*) 'Step = ', j
-		!write(*,*) 't_start = ', t_start 
+   		write(*,*) 'Step = ', j
+		write(*,*) 't_start = ', t_start 
 		!write(*,*) 't_end = ', t_end 
 
    		call isolve( &
@@ -4387,11 +4399,11 @@ module znd
    			pathological_loc = t_end
    			max_mach = rpar(2)
 			
-			write(*,*)
-			write(*,*) 'rpar(2).gt.max_mach is true'
-			write(*,*) 'rpar(2) = ', rpar(2)
-			write(*,*) 'max_mach = ', max_mach
-			write(*,*) 'not.gone_sonic is true'
+			!write(*,*)
+			!write(*,*) 'rpar(2).gt.max_mach is true'
+			!write(*,*) 'rpar(2) = ', rpar(2)
+			!write(*,*) 'max_mach = ', max_mach
+			!write(*,*) 'not.gone_sonic is true'
 
    			!If we're traversing the pathological point then do that here if we reach the
    			!sonic limit used in pathological detonations:
@@ -4801,7 +4813,8 @@ module znd
             stop 1
          end if
          
-		write(*,*) 'Starting do_my_burn'
+		write(*,*)
+		write(*,*) '************************* Starting do_my_burn *************************'
 
          ! set mass fractions -- must add to 1.0
          xa = 0d0
@@ -6810,7 +6823,8 @@ module znd
         close(sweep_io)
         close(data_in)
         !close(report_io)
-		write(*,*) 'Exiting setup_net'
+     	write(*,*) '************************* Exiting do_my_burn *************************'
+		write(*,*)
       end subroutine do_my_burn
       
       subroutine cleanup

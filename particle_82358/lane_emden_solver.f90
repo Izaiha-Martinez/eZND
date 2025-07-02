@@ -112,7 +112,7 @@ module lane_emden_solver
 		 write(*,*) 'Initializing subroutine lane_emden_init'
          write(*,*)        
          !write(*,*) 'vdpol'
-         !write(*,*) 'cash_karp'
+         write(*,*) 'dopri5'
 		 
          
          y_le => y_ary
@@ -143,17 +143,16 @@ module lane_emden_solver
          h_le = 1d-10
          
          !vdp:
-        !rpar_le(1) = eps
+         !rpar_le(1) = eps
          
          !lane-emden
          rpar_le = 0
          ipar_le = 0
-
+		
+		 !Since I replaced cash_karp with dopri5 I also need to replace the work size 
          !call cash_karp_work_sizes(nv_le,liwork_le,lwork_le)
-         
-		 !I took what was in cash_karp_work_sizes and wrote it below
-         lwork_le = 14*nv_le
-		 liwork_le = 4
+
+		 call dopri5_work_sizes(nv_le,nv_le,liwork_le,lwork_le)
          allocate(work_le(lwork_le), iwork_le(liwork_le))
 
          iwork_le = 0
@@ -188,23 +187,10 @@ module lane_emden_solver
 		implicit none
 		
          logical, intent(in) :: show_all
-         
-         which_sol = 1 	
-		 y_mi = -1e100
-		 y_ma = 1e100
-		 allocate(rpar_decsol_le(1))     ! dummy, unused
-		 allocate(ipar_decsol_le(1))     ! dummy, unused
-		 rpar_decsol_le = 0d0
-		 ipar_decsol_le = 0
 
          ierr_le = 0
-         allocate(lblk_dummy(1));      lblk_dummy = 0d0
-         allocate(dblk_dummy(1));      dblk_dummy = 0d0
-         allocate(ublk_dummy(1));      ublk_dummy = 0d0
-         allocate(uf_lblk_dummy(1));   uf_lblk_dummy = 0d0
-         allocate(uf_dblk_dummy(1));   uf_dblk_dummy = 0d0
-         allocate(uf_ublk_dummy(1));   uf_ublk_dummy = 0d0
          
+		 !cash_karp is no longer in MESA, replace with dopri5
          !call cash_karp( &
          !      !nv_le,van_der_Pol_derivs,x,y,xend, &
          !      nv_le,lane_emden_derivs,x_le,y_le,xend_le, &
@@ -212,20 +198,15 @@ module lane_emden_solver
          !      rtol_le,atol_le,itol_le, &
          !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
          !      lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-			call isolve( &
-				which_sol, nv_le, lane_emden_derivs, x_le, y_le, xend_le, &
-				h_le, max_step_size_le, max_steps_le, &
-				rtol_le, atol_le, itol_le, y_mi, y_ma, &
-				null_jac, 0, null_sjac, 0, 0, 0, 0, &
-				null_mas, 0, 0, 0, &
-				null_solout, iout_le, &
-				null_decsol, null_decsols, null_decsolblk, &
-				0, rpar_decsol_le, 0, ipar_decsol_le, &
-				0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-				null_fcn_blk_dble, null_jac_blk_dble, &
-				work_le, lwork_le, iwork_le, liwork_le, &
-				lrpar_le, rpar_le, lipar_le, ipar_le, &
-				lout_le, idid_le)
+
+		 call dopri5( &
+               !nv_le,van_der_Pol_derivs,x,y,xend, &
+               nv_le,lane_emden_derivs,x_le,y_le,xend_le, &
+               h_le,max_step_size_le,max_steps_le, &
+               rtol_le,atol_le,itol_le, &
+               null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
+               lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
+
 
          if (idid_le /= 1) then ! trouble
             write(*,*) 'idid', idid_le
@@ -266,22 +247,8 @@ module lane_emden_solver
          xstart = 1d-8	!xend = x, here
          y_le(1) = 1d0
          y_le(2) = 0d0
-         
-         which_sol = 1 	
-		 y_mi = -1e100
-		 y_ma = 1e100
-		 allocate(rpar_decsol_le(1))     ! dummy, unused
-		 allocate(ipar_decsol_le(1))     ! dummy, unused
-		 rpar_decsol_le = 0d0
-		 ipar_decsol_le = 0
-
-         allocate(lblk_dummy(1));      lblk_dummy = 0d0
-		 allocate(dblk_dummy(1));      dblk_dummy = 0d0
-		 allocate(ublk_dummy(1));      ublk_dummy = 0d0
-		 allocate(uf_lblk_dummy(1));   uf_lblk_dummy = 0d0
-		 allocate(uf_dblk_dummy(1));   uf_dblk_dummy = 0d0
-		 allocate(uf_ublk_dummy(1));   uf_ublk_dummy = 0d0
-
+		 
+		 !cash_karp is no longer in MESA, replace with dopri5
          !call cash_karp( &
          !      !nv_le,van_der_Pol_derivs,x,y,xend, &
          !      nv_le,lane_emden_derivs,xstart,y_le,x, &
@@ -289,20 +256,13 @@ module lane_emden_solver
          !      rtol_le,atol_le,itol_le, &
          !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
          !      lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-			call isolve( &
-				which_sol, nv_le, lane_emden_derivs, xstart, y_le, x, &
-				h_le, max_step_size_le, max_steps_le, &
-				rtol_le, atol_le, itol_le, y_mi, y_ma, &
-				null_jac, 0, null_sjac, 0, 0, 0, 0, &
-				null_mas, 0, 0, 0, &
-				null_solout, iout_le, &
-				null_decsol, null_decsols, null_decsolblk, &
-				0, rpar_decsol_le, 0, ipar_decsol_le, &
-				0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-				null_fcn_blk_dble, null_jac_blk_dble, &
-				work_le, lwork_le, iwork_le, liwork_le, &
-				lrpar_le, rpar_le, lipar_le, ipar_le, &
-				lout_le, idid_le)
+		 call dopri5( &
+               !nv_le,van_der_Pol_derivs,x,y,xend, &
+               nv_le,lane_emden_derivs,xstart,y_le,x, &
+               h_le,max_step_size_le,max_steps_le, &
+               rtol_le,atol_le,itol_le, &
+               null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
+               lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
 
 
          if (idid_le /= 1) then ! trouble
@@ -332,21 +292,8 @@ module lane_emden_solver
          y_le(1) = 1d0
          y_le(2) = 0d0
          
-         which_sol = 1 	
-		 y_mi = -1e100
-		 y_ma = 1e100
-		 allocate(rpar_decsol_le(1))     ! dummy, unused
-		 allocate(ipar_decsol_le(1))     ! dummy, unused
-		 rpar_decsol_le = 0d0
-		 ipar_decsol_le = 0
 
-         allocate(lblk_dummy(1));      lblk_dummy = 0d0
-		 allocate(dblk_dummy(1));      dblk_dummy = 0d0
-		 allocate(ublk_dummy(1));      ublk_dummy = 0d0
-		 allocate(uf_lblk_dummy(1));   uf_lblk_dummy = 0d0
-		 allocate(uf_dblk_dummy(1));   uf_dblk_dummy = 0d0
-		 allocate(uf_ublk_dummy(1));   uf_ublk_dummy = 0d0
-
+		 !cash_karp is no longer in MESA, replace with dopri5
          !call cash_karp( &
          !      !nv_le,van_der_Pol_derivs,x,y,xend, &
          !      nv_le,lane_emden_derivs,xstart,y_le,x, &
@@ -354,20 +301,14 @@ module lane_emden_solver
          !      rtol_le,atol_le,itol_le, &
          !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
          !      lrpar,rpar,lipar,ipar,lout_le,idid_le)
-			call isolve( &
-				which_sol, nv_le, lane_emden_derivs, xstart, y_le, x, &
-				h_le, max_step_size_le, max_steps_le, &
-				rtol_le, atol_le, itol_le, y_mi, y_ma, &
-				null_jac, 0, null_sjac, 0, 0, 0, 0, &
-				null_mas, 0, 0, 0, &
-				null_solout, iout_le, &
-				null_decsol, null_decsols, null_decsolblk, &
-				0, rpar_decsol_le, 0, ipar_decsol_le, &
-				0, 0, 0, lblk_dummy, dblk_dummy, ublk_dummy, uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy, &
-				null_fcn_blk_dble, null_jac_blk_dble, &
-				work_le, lwork_le, iwork_le, liwork_le, &
-				lrpar, rpar, lipar, ipar, &
-				lout_le, idid_le)
+
+         call dopri5( &
+               !nv_le,van_der_Pol_derivs,x,y,xend, &
+               nv_le,lane_emden_derivs,xstart,y_le,x, &
+               h_le,max_step_size_le,max_steps_le, &
+               rtol_le,atol_le,itol_le, &
+               null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
+               lrpar,rpar,lipar,ipar,lout_le,idid_le)
 
          if (idid_le /= 1) then ! trouble
             write(*,*) 'idid', idid_le
