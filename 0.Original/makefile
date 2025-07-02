@@ -5,8 +5,7 @@
 
 #MESA_DIR = /Users/Kevin/mesa_5271
 #MESA_DIR = /Users/Kevin/mesa_5819
-
-MESA_DIR = /home/iemartinez/mesa_dir/mesa-r23.05.1
+MESA_DIR = /grps2/dmtownsley/sjboos/newBurn/mesa_8845_broxton
 
 include $(MESA_DIR)/utils/makefile_header
 

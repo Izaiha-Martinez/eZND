@@ -55,8 +55,7 @@ module wd_solver
 	integer :: num_isos_for_Xinit, species_wd
 	character(len=iso_name_length) :: names_of_isos_for_Xinit(max_num_isos_for_Xinit)
     double precision :: values_for_Xinit(max_num_isos_for_Xinit)
-	double precision :: xh, xhe, zm, abar, zbar, z2bar, ye, xsum, mass_correction
-	double precision :: z53bar 																!new variable in composition_info
+	double precision ::  xh, xhe, zm, abar, zbar, z2bar, ye, xsum, mass_correction
 	 
 	!EOS variables:
     !Common named variables:
@@ -68,25 +67,12 @@ module wd_solver
 	double precision :: Pgas, logPgas, logRho, logT, t0, p0, e0, p, e, rho, t, t_env
 	double precision :: dlnRho_dlnPgas_const_T
     double precision :: dlnRho_dlnT_const_Pgas
-	!double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
-	!double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array
-    !double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array
-    !double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array
-    !double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array
-	
-	!!For eos DT get 
-	! Playing around with
-	real(dp), dimension(num_eos_basic_results) :: res, d_dlnd, d_dlnT
-	real(dp), allocatable :: d_dxa(:,:)
-
-	!For eos PT get
-	!dlnRho_dlnPgas_const_T			!already declared above
-	!dlnRho_dlnT_const_Pgas			!already declared above
-	!d_dlnRho_const_T				!this are d_dlnd
-	!d_dlnT_const_Rho				!this are d_dlnT
-	real(dp), allocatable :: d_dxa_const_TRho(:,:)
-
-
+	double precision, dimension(num_eos_basic_results) :: res  	!Basic EOS result array
+	double precision :: d_dlnRho_const_T(num_eos_basic_results) !Basic EOS derivs array
+    double precision :: d_dlnT_const_Rho(num_eos_basic_results) !Basic EOS derivs array
+    double precision :: d_dabar_const_TRho(num_eos_basic_results)	!Basic EOS result array
+    double precision :: d_dzbar_const_TRho(num_eos_basic_results)	!Basic EOS result array
+    
     !Newton solver variables:
     real(dp), parameter :: one=1
 	integer, parameter :: nz = 1, nvar = 2 !use odd number of zones for problem symmetry
@@ -123,46 +109,43 @@ module wd_solver
 			integer :: ierr
 			
 			do_numerical_jacobian = .true.   
-      		which_decsol = lapack
+      	which_decsol = lapack
       		
 			call decsol_option_str(which_decsol, decsol_option_name, ierr)
 			if (ierr /= 0) return
          	
-         	write(*,*) 'Newton solver using ' // trim(decsol_option_name)
-         	!write(*,*)
+         write(*,*) 'Newton solver using ' // trim(decsol_option_name)
+         write(*,*)
          	
-         	neq = nvar*nz
+         neq = nvar*nz
 			allocate(equ1(neq), x1(neq), xold1(neq), dx1(neq), &
 				xscale1(neq), y1(ldy*nsec), stat=ierr)
 			if (ierr /= 0) stop 1
          
 			x(1:nvar,1:nz) => x1(1:neq)
-			xold(1:nvar,1:nz) => xold1(1:neq)
-			dx(1:nvar,1:nz) => dx1(1:neq)
-			equ(1:nvar,1:nz) => equ1(1:neq)
-			xscale(1:nvar,1:nz) => xscale1(1:neq)
-			y(1:ldy,1:nsec) => y1(1:ldy*nsec)
+      	xold(1:nvar,1:nz) => xold1(1:neq)
+      	dx(1:nvar,1:nz) => dx1(1:neq)
+      	equ(1:nvar,1:nz) => equ1(1:neq)
+      	xscale(1:nvar,1:nz) => xscale1(1:neq)
+      	y(1:ldy,1:nsec) => y1(1:ldy*nsec)
 		end subroutine newton_init
 		
 		subroutine init_mesa_modules()
 			implicit none
 			
+			write(*,*) 'Initializing WD builder'
 			write(*,*)
-			write(*,*) 'Initializing WD builder (subroutine init_mesa_modules)'
 		
 			!mesa_dir = '/Users/Kevin/mesa'
 			!mesa_dir = '/Users/Kevin/mesa_5271'
 			!mesa_dir = '/Users/Kevin/mesa_5819'
-			!mesa_dir = ''
-
-			write(*,*) 'mesa_dir = ', mesa_dir 
-
+			mesa_dir = ''
 			call const_init(mesa_dir, ierr_wd)
 
 			!EOS options:
 			eos_file_prefix = 'mesa'
 			use_cache = .true.
-         	species_wd = 3
+         species_wd = 3
 
 			call chem_init('isotopes.data', ierr_wd)
 			if (ierr_wd /= 0) then
@@ -177,7 +160,7 @@ module wd_solver
 				dzbar_dx(species_wd), dmc_dx(species_wd), stat=ierr_wd)
 				if (ierr_wd /= 0) stop 'allocate failed'
 
-			call eos_init(eos_file_prefix, use_cache, info)
+			call eos_init(eos_file_prefix, '', '', '', use_cache, info)
 			if (info /= 0) then
 				write(*,*) 'eos_init failed in Setup_eos'
 				stop 1
@@ -192,8 +175,6 @@ module wd_solver
 			end if
 
 			call newton_init()
-			write(*,*) 'Exiting init_mesa_modules'
-			!write(*,*)
 		end subroutine init_mesa_modules
       
       subroutine wd_init()
@@ -201,9 +182,6 @@ module wd_solver
 
 			ipar_wd => ipar_ary
 			rpar_wd => rpar_ary
-
-			write(*,*)
-			write(*,*) 'Starting WD_init'
 
 			y_wd => y_ary
 
@@ -258,18 +236,9 @@ module wd_solver
 			end do
 			write(*,*)
 
-			!write(*,*) 'abar =', abar
-			!write(*,*) 'zbar =', zbar
-			!write(*,*) 'zm =', zm
-			!write(*,*) 'z53bar =', z53bar
-			call composition_info( &
-				species_wd, chem_id, xa_wd, xh, xhe, zm, &
-				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
-				xsum, dabar_dx, dzbar_dx, dmc_dx)
-			write(*,*) 'abar =', abar
-			write(*,*) 'zbar =', zbar
-			write(*,*) 'zm =', zm
-			write(*,*) 'z53bar =', z53bar
+			call composition_info(species_wd, chem_id, xa_wd, xh, xhe, zm, abar, zbar, z2bar, &
+				ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
+			!write(*,*) abar, zbar, zm
 
 			lout_wd = 6
 			max_steps_wd = 10000
@@ -289,17 +258,11 @@ module wd_solver
 			rpar_wd = 0
 			ipar_wd = 0
 
-			!Since I replaced cash_karp with dopri5 I also need to replace the work size 
-			!call cash_karp_work_sizes(nv_wd,liwork_wd,lwork_wd)
-
-			call dopri5_work_sizes(nv_wd,nv_wd,liwork_wd,lwork_wd)
+			call cash_karp_work_sizes(nv_wd,liwork_wd,lwork_wd)
 			allocate(work_wd(lwork_wd), iwork_wd(liwork_wd))
 
 			iwork_wd = 0
 			work_wd = 0
-
-			write(*,*) 'Exiting wd_init'
-			write(*,*)
 		end subroutine wd_init
 		
 		subroutine set_initial_conditions(rho_c)
@@ -314,25 +277,17 @@ module wd_solver
 			y_wd(3) = 0d0							!t_sound in s
 			y_wd(4) = x_wd							!r(0), if using P as indep variable
 			
-			call composition_info( &
-				species_wd, chem_id, xa_wd, xh, xhe, zm, &
-				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
-				xsum, dabar_dx, dzbar_dx, dmc_dx)
+			call composition_info(species_wd, chem_id, xa_wd, xh, xhe, zm, abar, zbar, z2bar, &
+				ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
 			!write(*,*) abar, zbar, zm
 
 			rho = y_wd(1)
 			logRho = log10(rho)
 			T = T0
 			logT = log10(T)
-			!call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_wd, &
-			!	rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-			!	d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)	! something crazy happening with this
-			
-			call eosDT_get( & 
-				eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-				rho, logRho, T, logT, & 
-				res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
-
+			call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_wd, &
+				rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+				d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)
 			e0 = exp(res(i_lnE))
 			p0 = exp(res(i_lnPgas)) + 1/3d0*crad*t**4
 			
@@ -347,7 +302,7 @@ module wd_solver
 			integer, intent(in) :: n, lrpar, lipar
 			real(dp), intent(in) :: x, h
 			real(dp), intent(inout) :: y(:)
-			real(dp), intent(inout) :: f(:)
+			real(dp), intent(out) :: f(:)
 			integer, intent(inout), pointer :: ipar(:) ! (lipar)
 			real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
 			integer, intent(out) :: ierr ! nonzero means retry with smaller timestep.
@@ -364,10 +319,9 @@ module wd_solver
 			logRho = log10(rho)
 			T = T0
 			logT = log10(T)
-			call eosDT_get( & 
-				eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-				rho, logRho, T, logT, & 
-				res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
+			call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_wd, &
+				rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+				d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
 			e = exp(res(i_lnE))
 			gamma1 = res(i_gamma1)
 
@@ -403,7 +357,7 @@ module wd_solver
 			integer, intent(in) :: n, lrpar, lipar
 			real(dp), intent(in) :: x, h
 			real(dp), intent(inout) :: y(:)
-			real(dp), intent(inout) :: f(:)
+			real(dp), intent(out) :: f(:)
 			integer, intent(inout), pointer :: ipar(:) ! (lipar)
 			real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
 			integer, intent(out) :: ierr ! nonzero means retry with smaller timestep.
@@ -424,10 +378,9 @@ module wd_solver
 			T = T_env*(rho/rho_b)**(gamma1-1)
 			!T = T0
 			logT = log10(T)
-			call eosDT_get( & 
-				eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-				rho, logRho, T, logT, & 
-				res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
+			call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_env, &
+				rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+				d_dabar_const_TRho, d_dzbar_const_TRho, ierr)
 			e = exp(res(i_lnE))
 			p = exp(res(i_lnPgas)) + 1/3d0*crad*t**4     
 			!dP_drho = res(i_chiRho)*p/rho
@@ -471,8 +424,6 @@ module wd_solver
 			ierr_wd = 0
 			num_steps = 100
 
-			write(*,*) 'starting wd_integrate'
-
 			if(dbg) then
 				write(*,*) 'Starting integration'
 				write(*,*)
@@ -489,21 +440,12 @@ module wd_solver
 				
 				!write(*,'(99ES20.10)') x_wd, xend_wd
 				!write(*,'(99ES20.10)') y_wd(1), y_wd(2), y_wd(3), y_wd(4)
-				!call cash_karp( &
-				!   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
-				!   h_wd,max_step_size_wd,max_steps_wd, &
-				!   rtol_wd,atol_wd,itol_wd, &
-				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
-				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-
-				call dopri5( &
+				call cash_karp( &
 				   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
 				   h_wd,max_step_size_wd,max_steps_wd, &
 				   rtol_wd,atol_wd,itol_wd, &
 				   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
 				   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-
-
 				!write(*,'(99ES20.10)') y_wd(1), y_wd(2), y_wd(3), y_wd(4)
 
 				if (idid_wd /= 1) then ! trouble
@@ -515,10 +457,9 @@ module wd_solver
 				logRho = log10(rho)
 				T = T0
 				logT = log10(T)
-				call eosDT_get( & 
-					eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-					rho, logRho, T, logT, & 
-					res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
+				call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_wd, &
+					rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+					d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)
 				e = exp(res(i_lnE))
 				p = exp(res(i_lnPgas)) + 1/3d0*crad*t**4   
 
@@ -546,7 +487,6 @@ module wd_solver
 				!write(*,*) x_wd, p, p0
 			end do
 
-			write(*,*) 'Exiting wd_integrate'
       	end subroutine wd_integrate
       	
       	subroutine wd_envelope(rho_c, pb_frac, m_c, m_env, rho_b, p_b, r_c, r_wd, t_sound)
@@ -554,13 +494,12 @@ module wd_solver
 			
 			double precision, intent(in) :: rho_c, pb_frac
 			double precision, intent(inout) :: m_c, m_env, rho_b, p_b, r_c, r_wd, t_sound
- 			integer :: i, num_steps
+
+			integer :: i, num_steps
 
 			ierr_wd = 0
 			num_steps = 100
-
-			write(*,*) 'starting wd_envelope'
-
+			
 			if(dbg) then
 				write(*,*) 'Starting core integration'
 				write(*,*) rho_c, pb_frac
@@ -574,14 +513,7 @@ module wd_solver
 					x_wd = 1d0 + 10**(5d0 + 5d0*(i-1)/num_steps)
 					xend_wd = 1d0 + 10**(5d0 + 5d0*i/num_steps)
 				endif
-				!call cash_karp( &
-				!   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
-				!   h_wd,max_step_size_wd,max_steps_wd, &
-				!   rtol_wd,atol_wd,itol_wd, &
-				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
-				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-
-				call dopri5( &
+				call cash_karp( &
 				   nv_wd,wd_derivs,x_wd,y_wd,xend_wd, &
 				   h_wd,max_step_size_wd,max_steps_wd, &
 				   rtol_wd,atol_wd,itol_wd, &
@@ -597,10 +529,9 @@ module wd_solver
 				logRho = log10(rho)
 				T = T0
 				logT = log10(T)
-				call eosDT_get( & 
-					eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-					rho, logRho, T, logT, & 
-					res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
+				call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_wd, &
+					rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+					d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)
 				e = exp(res(i_lnE))
 				Pgas = exp(res(i_lnPgas))
 				p = exp(res(i_lnPgas)) + 1/3d0*crad*t**4   
@@ -636,26 +567,15 @@ module wd_solver
 			end do
 			
 			!Find base density in envelope (rho_b):
-			call composition_info( &
-				species_wd, chem_id, xa_wd, xh, xhe, zm, &
-				abar, zbar, z2bar, z53bar, ye, mass_correction, & 
-				xsum, dabar_dx, dzbar_dx, dmc_dx)
+			call composition_info(species_wd, chem_id, xa_env, xh, xhe, zm, abar, zbar, z2bar, &
+				ye, mass_correction, xsum, dabar_dx, dzbar_dx, dmc_dx)
 			logPgas = log10(Pgas)
 			T = t_env	!Envelope temperature higher than T_c typically
 			logT = log10(T)
-			!call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, &
-			!	xa_env, Pgas, logPgas, T, logT, rho_b, logRho, dlnRho_dlnPgas_const_T, &
-			!	dlnRho_dlnT_const_Pgas, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
-			!	d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd) 	! Another wierd subroutine
-
-			call eosPT_get(& 
-				eos_handle, &
-				species_wd, chem_id, net_iso, xa_env, &
-				Pgas, logPgas, T, logT, &
-				rho_b, logRho, dlnRho_dlnPgas_const_T, dlnRho_dlnT_const_Pgas, &
-				res, d_dlnd, d_dlnT, &
-				d_dxa_const_TRho, ierr_wd)
-
+			call eosPT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, &
+				xa_env, Pgas, logPgas, T, logT, rho_b, logRho, dlnRho_dlnPgas_const_T, &
+				dlnRho_dlnT_const_Pgas, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+				d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)
 			if(dbg) then
 				write(*,*) 'Base density in core:', y_wd(1)
 				write(*,*) 'Base density in envelope:', rho_b
@@ -680,20 +600,13 @@ module wd_solver
 					xend_wd = r_c + 10**(5d0 + 5.0*i/num_steps) - 1d0
 				endif
 				
-				!call cash_karp( &
-				!   nv_wd,envelope_derivs,x_wd,y_wd,xend_wd, &
-				!   h_wd,max_step_size_wd,max_steps_wd, &
-				!   rtol_wd,atol_wd,itol_wd, &
-				!   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
-				!   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-
-				call dopri5( &
+				call cash_karp( &
 				   nv_wd,envelope_derivs,x_wd,y_wd,xend_wd, &
 				   h_wd,max_step_size_wd,max_steps_wd, &
 				   rtol_wd,atol_wd,itol_wd, &
 				   null_solout,iout_wd,work_wd,lwork_wd,iwork_wd,liwork_wd, &
 				   lrpar_wd,rpar_wd,lipar_wd,ipar_wd,lout_wd,idid_wd)
-				
+
 				if (idid_wd /= 1) then ! trouble
 					write(*,*) 'idid', idid_wd
 					stop 1
@@ -703,10 +616,9 @@ module wd_solver
 				logRho = log10(rho)
 				T = T_env*(rho/rho_b)**(2d0/3)
 				logT = log10(T)
-				call eosDT_get( & 
-					eos_handle, species_wd, chem_id, net_iso, xa_wd, &
-					rho, logRho, T, logT, & 
-					res, d_dlnd, d_dlnT, d_dxa, ierr_wd)
+				call eosDT_get(eos_handle, Zm, Xh, abar, zbar, species_wd, chem_id, net_iso, xa_env, &
+					rho, logRho, T, logT, res, d_dlnRho_const_T, d_dlnT_const_Rho, &
+					d_dabar_const_TRho, d_dzbar_const_TRho, ierr_wd)
 				e = exp(res(i_lnE))
 				p = exp(res(i_lnPgas)) + 1/3d0*crad*t**4   
 
@@ -734,8 +646,7 @@ module wd_solver
 			else
 				r_wd = x_wd
 			endif
-
-			write(*,*) 'Exiting wd_envelope'
+			
       	end subroutine wd_envelope
       	
 		double precision function find_rhoc_func(x, dfdx, lrpar, rpar, lipar, ipar, ierr)
@@ -1033,9 +944,9 @@ module wd_solver
    				else
    			   		matrix_type = banded_matrix_type
    				end if
-   			!else if (which_decsol == block_thomas_dble) then
-   			!	call block_thomas_dble_work_sizes(nvar, nz, lrd, lid)
-   			!	matrix_type = block_tridiag_dble_matrix_type
+   			else if (which_decsol == block_thomas_dble) then
+   				call block_thomas_dble_work_sizes(nvar, nz, lrd, lid)
+   				matrix_type = block_tridiag_dble_matrix_type
    			!else if (which_decsol == block_thomas_quad) then
    			!	call block_thomas_quad_work_sizes(nvar, nz, lrd, lid)
    			!		matrix_type = block_tridiag_quad_matrix_type
@@ -1268,8 +1179,6 @@ module wd_solver
 		subroutine enter_setmatrix( &
 		iter, nvar, nz, neqs, x, xold, xscale, xder, need_solver_to_eval_jacobian, &
 		ldA, A1, idiag, lrpar, rpar, lipar, ipar, ierr)
-			!use formats
-			
 			integer, intent(in) :: iter, nvar, nz, neqs
 			real(dp), pointer, dimension(:,:) :: x, xold, xscale, xder ! (nvar, nz)
 			logical, intent(out) :: need_solver_to_eval_jacobian
@@ -1388,9 +1297,9 @@ module wd_solver
 				else
 			   		matrix_type = banded_matrix_type
 				end if
-			!else if (which_decsol == block_thomas_dble) then
-			!	call block_thomas_dble_work_sizes(nvar, nz, lrd, lid)
-			!		matrix_type = block_tridiag_dble_matrix_type
+			else if (which_decsol == block_thomas_dble) then
+				call block_thomas_dble_work_sizes(nvar, nz, lrd, lid)
+					matrix_type = block_tridiag_dble_matrix_type
 			!else if (which_decsol == block_thomas_quad) then
 			!	call block_thomas_quad_work_sizes(nvar, nz, lrd, lid)
 			!		matrix_type = block_tridiag_quad_matrix_type

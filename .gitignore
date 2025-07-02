@@ -17,11 +17,4 @@ test
 
 #My Save Files 
 *.csv 
-
-#My foldeers
-/0.Original
-/test_miles
-/Miles_Compare
-/particle_82358
-
 *.ipynb

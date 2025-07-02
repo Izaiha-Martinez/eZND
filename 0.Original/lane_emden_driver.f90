@@ -10,8 +10,8 @@ program main
 	double precision :: m_wd, r_wd, m_env, m_c
 	integer :: nloop
 	
-	mesa_dir = '/Users/Kevin/mesa'
-	!mesa_dir = '/home/iemartinez/mesa_dir/mesa-r23.05.1'
+	!mesa_dir = '/Users/Kevin/mesa'
+	mesa_dir = '/grps2/dmtownsley/sjboos/newBurn/mesa_8845_broxton'
 	call const_init(mesa_dir, ierr_le)
 	
 	call lane_emden_init()

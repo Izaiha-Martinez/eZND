@@ -4,10 +4,7 @@ module lane_emden_solver
 	use const_lib
 	use num_def
 	use num_lib
-	use mtx_def
-	use mtx_lib
 	
-   
 	integer, parameter :: nv_le = 2  ! the number of variables in the van der Pol system of ODEs
 	real(dp) :: n_le	!Polytropic index gamma = 1 + 1/n_le
 	 real(dp), parameter :: eps = 1d-3 ! stiffness parameter for van der Pol
@@ -32,20 +29,6 @@ module lane_emden_solver
 	 real(dp), pointer :: rpar_le(:) ! (lrpar)
 	 
 	 real(dp) :: r_n, rho_c, p_c, k_le
-
-	!isolve variables 
-	integer :: which_sol
-    real(dp) :: y_mi, y_ma
-	!!! Dummy interfaces
-	!external :: null_jac, null_sjac, null_mas
-	!external :: null_decsol, null_decsols, null_decsolblk
-	!external :: null_fcn_blk_dble, null_jac_blk_dble
-	!!! Placeholders for decsol args (unused, so dummy values)
-	real(dp), pointer :: rpar_decsol_le(:) => null()
-	integer,  pointer :: ipar_decsol_le(:) => null()
-	real(dp), dimension(:), pointer :: lblk_dummy, dblk_dummy, ublk_dummy
-	real(dp), dimension(:), pointer :: uf_lblk_dummy, uf_dblk_dummy, uf_ublk_dummy
-
 
 	contains
 	
@@ -72,7 +55,7 @@ module lane_emden_solver
          integer, intent(in) :: n, lrpar, lipar
          real(dp), intent(in) :: x
          real(dp), intent(inout) :: y(n)
-         real(dp), intent(inout) :: f(n)
+         real(dp), intent(out) :: f(n)
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr ! nonzero means retry with smaller timestep.
@@ -86,7 +69,7 @@ module lane_emden_solver
          integer, intent(in) :: n, lrpar, lipar
          real(dp), intent(in) :: x, h
          real(dp), intent(inout) :: y(:)
-         real(dp), intent(inout) :: f(:)
+         real(dp), intent(out) :: f(:)
          integer, intent(inout), pointer :: ipar(:) ! (lipar)
          real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
          integer, intent(out) :: ierr ! nonzero means retry with smaller timestep.
@@ -108,12 +91,10 @@ module lane_emden_solver
       
       	ipar_le => ipar_ary
          rpar_le => rpar_ary
-		
-		 write(*,*) 'Initializing subroutine lane_emden_init'
+
          write(*,*)        
-         !write(*,*) 'vdpol'
-         write(*,*) 'dopri5'
-		 
+         write(*,*) 'vdpol'
+         write(*,*) 'cash_karp'
          
          y_le => y_ary
 
@@ -143,70 +124,32 @@ module lane_emden_solver
          h_le = 1d-10
          
          !vdp:
-         !rpar_le(1) = eps
+        !rpar_le(1) = eps
          
          !lane-emden
          rpar_le = 0
          ipar_le = 0
-		
-		 !Since I replaced cash_karp with dopri5 I also need to replace the work size 
-         !call cash_karp_work_sizes(nv_le,liwork_le,lwork_le)
 
-		 call dopri5_work_sizes(nv_le,nv_le,liwork_le,lwork_le)
+         call cash_karp_work_sizes(nv_le,liwork_le,lwork_le)
          allocate(work_le(lwork_le), iwork_le(liwork_le))
-
+         
          iwork_le = 0
          work_le = 0
-
-
-		!Variables look fine 
-		!write(*,*) 'variables of lane_emden_init'
-
-		!write(*,*) 'ipar_le =', ipar_le
-		!write(*,*) 'rpar_le =', rpar_le
-		!write(*,*) 'x_le =', x_le
-		!write(*,*) 'xend_le =', xend_le
-		!write(*,*) 'n_le =', n_le
-		!write(*,*) 'y_le =', y_le
-		!write(*,*) 'lout_le =', lout_le
-		!write(*,*) 'itol_le =', itol_le
-		!write(*,*) 'iout_le =', iout_le
-		!write(*,*) 'rtol_le =', rtol_le
-		!write(*,*) 'atol_le =', atol_le
-		!write(*,*) 'h_le =', h_le
-		!write(*,*) 'lwork_le =', lwork_le
-		!write(*,*) 'liwork_le =', liwork_le
-		!write(*,*) 'iwork_le =', iwork_le
-		!write(*,*) 'work_le =', work_le
-
-		write(*,*) 'exiting lane_emden_init'
-
       end subroutine lane_emden_init
 
 	subroutine test_cash_karp(show_all)
 		implicit none
 		
          logical, intent(in) :: show_all
-
-         ierr_le = 0
          
-		 !cash_karp is no longer in MESA, replace with dopri5
-         !call cash_karp( &
-         !      !nv_le,van_der_Pol_derivs,x,y,xend, &
-         !      nv_le,lane_emden_derivs,x_le,y_le,xend_le, &
-         !      h_le,max_step_size_le,max_steps_le, &
-         !      rtol_le,atol_le,itol_le, &
-         !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
-         !      lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-
-		 call dopri5( &
+         ierr_le = 0
+         call cash_karp( &
                !nv_le,van_der_Pol_derivs,x,y,xend, &
                nv_le,lane_emden_derivs,x_le,y_le,xend_le, &
                h_le,max_step_size_le,max_steps_le, &
                rtol_le,atol_le,itol_le, &
                null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
                lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-
 
          if (idid_le /= 1) then ! trouble
             write(*,*) 'idid', idid_le
@@ -247,23 +190,14 @@ module lane_emden_solver
          xstart = 1d-8	!xend = x, here
          y_le(1) = 1d0
          y_le(2) = 0d0
-		 
-		 !cash_karp is no longer in MESA, replace with dopri5
-         !call cash_karp( &
-         !      !nv_le,van_der_Pol_derivs,x,y,xend, &
-         !      nv_le,lane_emden_derivs,xstart,y_le,x, &
-         !      h_le,max_step_size_le,max_steps_le, &
-         !      rtol_le,atol_le,itol_le, &
-         !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
-         !      lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-		 call dopri5( &
+         
+         call cash_karp( &
                !nv_le,van_der_Pol_derivs,x,y,xend, &
                nv_le,lane_emden_derivs,xstart,y_le,x, &
                h_le,max_step_size_le,max_steps_le, &
                rtol_le,atol_le,itol_le, &
                null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
                lrpar_le,rpar_le,lipar_le,ipar_le,lout_le,idid_le)
-
 
          if (idid_le /= 1) then ! trouble
             write(*,*) 'idid', idid_le
@@ -292,17 +226,7 @@ module lane_emden_solver
          y_le(1) = 1d0
          y_le(2) = 0d0
          
-
-		 !cash_karp is no longer in MESA, replace with dopri5
-         !call cash_karp( &
-         !      !nv_le,van_der_Pol_derivs,x,y,xend, &
-         !      nv_le,lane_emden_derivs,xstart,y_le,x, &
-         !      h_le,max_step_size_le,max_steps_le, &
-         !      rtol_le,atol_le,itol_le, &
-         !      null_solout,iout_le,work_le,lwork_le,iwork_le,liwork_le, &
-         !      lrpar,rpar,lipar,ipar,lout_le,idid_le)
-
-         call dopri5( &
+         call cash_karp( &
                !nv_le,van_der_Pol_derivs,x,y,xend, &
                nv_le,lane_emden_derivs,xstart,y_le,x, &
                h_le,max_step_size_le,max_steps_le, &

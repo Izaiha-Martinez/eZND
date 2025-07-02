@@ -571,13 +571,13 @@ module znd_test
       	 allocate(which_rates(rates_reaction_id_max))
           which_rates(:) = which_rates_choice
 
-         !call net_set_which_rates(handle, which_rates, ierr)
+         call net_set_which_rates(handle, which_rates, ierr)
          if (ierr /= 0) then
             write(*,*) 'net_set_which_rate_f17pg failed'
             return
          end if
          
-         !call net_setup_tables(handle, 'rate_tables', '', ierr)
+         call net_setup_tables(handle, 'rate_tables', '', ierr)
          if (ierr /= 0) then
             write(*,*) 'net_setup_tables failed'
             return
@@ -624,13 +624,13 @@ module znd_test
             return
          end if
 
-         !lwork_net = net_work_size(handle, ierr)
+         lwork_net = net_work_size(handle, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in net_work_size'
             return
          end if
          
-         !allocate(work_net(lwork_net))
+         allocate(work_net(lwork_net))
          
          write(*,*) 'species:',species
          write(*,*) 'num_reactions:',num_reactions
