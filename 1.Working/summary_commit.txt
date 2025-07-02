@@ -1,0 +1,121 @@
+Single ZND integration is now working with mesa-r23.05.1
+
+
+
+Here is a near compete list of changes I encounter to get this method working with a more recent 
+version of MESA (mesa-r23.05.1). 
+
+I believe the original eZND may have worked with MESA 8815 but I can not confirm this as the 
+old versions did not build on the UAHPC.
+
+
+Changes to wd_solver.f90:
+- subroutine composition_info
+    - z53bar is a new variable that now must be declared and used in the subroutine
+- subroutine eosDT_get 
+    - appears to be given Zm, Xh, abar, zbar when no longer needed 
+    - d_dabar_const_TRho and d_dzbar_const_TRho are done differently, before they were the average 
+    but now they are the derivatives of EACH species and therefore a new 2D array has replaced them
+        - d_dxa is this array and must now be declared and called on correctly!
+            - I had a lot of issue with doing this improperly, specificlly the allocations and where 
+            you can actually allocate it. Need to pay attention to where the variables are defined. 
+- subroutine eosPT_get 
+    - also happens to no longer take Zm, Xh, abar, zbar  
+    - thed_dxa_const_TRho is a new variable 
+        - another source of frustration was realizing this was done incorrectly 
+        - can be fixed by doing the same thing as d_dxa in the declarations and allocations 
+- subroutine eos\_init 
+    - erased the blank variables (given too many parameters)
+- subroutine num_cash_karp is no longer in mesa, replace with the subroutine dopric5
+    - replace the subroutine cash_karp_work_sizes with the appropriate work size subroutine
+
+
+Changes to lane_emden_solver.f90:
+- There are many instances where the f in the num_fcn.dek in new MESA needs to be 
+an intent(inout) while old MESA has it as intent(out), change to match the inout
+
+
+Changes to znd.f90:
+- crlimb_lib.mod does not exist in the current version of mesa, remove the calling
+- subroutine composition_info & eosDT_get need z53bar
+    - repeat what I did for wd\_solver 
+- subroutine isolve
+    - also had the issue of the f parameter intention needing to be changed 
+- subroutine eosPT_get needed to be reformated as well (same as it was done in wd_solver.f90)
+- subroutine net_get had some changes 
+    - had to erase the 2 false statments, theta_e_for_graboske_et_al, lwork_net, & work_net
+    - since the work arrays were removed the work array sizes were no longer needed 
+    and hence erased
+- eos_get_helm_results 
+    - the integers are column cut offs that don't seem to effect the code but have been 
+    set to low values
+    - the logic statements are very important and must stay on for the WD detonation sims 
+        - this can cause the code to hit the pathological point on the first step 
+- subroutine net_set_which_rates, commented out as no longer in MESA, rates are now set 
+by you reaction network chosen 
+- subroutine rates_init, there are new weak rate options that should not affect the sim 
+at these high conditions 
+- crlibm_init no longer exist and can be removed 
+
+
+Fixing the ODE solver
+- \textcolor{red}{The current issue (06.24.2025) is that the code runs to completion but the 
+    ODE solver doesn't seem to be working correctly.} In Miles output file my editied version 
+    of eZND gives similar ambient conditions and the other variables above that, awesome. But 
+    the actual masss fractions are off and also negative, yikes. The other indication of this 
+    being an ODE issue is that the interations don't converge at the spatial steps reading out 
+    that it requires more than 10,000 steps. Note: the values do not perfectly match likely due 
+    to using a slightly different reaction network. (this is fine as they are only fractions off 
+    aka on the same order of mag)
+- the code used to call on a 4th/5th order runge-kutta solver (cash_karp) but I replaced it 
+    (likley incorrectly) with isolve 
+    - the correct solver to replace cash_karp is the dopri5 solver 
+        - they both are 5th order solutions with 4th order errors 
+        - they also contain the same inputs for the subroutine 
+        - it complied and the executable is now running, \st{so far no max step has been reached}
+    - I recalled I should check the work size for dopri5, \textcolor{red}{the 2nd variable is not 
+    mentioned in the original cash karp work size but from the test it looks like they equate it 
+    to the first variable, hence that is what I did}
+        - seems to run so it should be fine 
+    - \textcolor{blue}{seems like cash_karp wasn't the issue, bc it is not being called for what 
+    I am running things for.}
+
+
+Fixing the 'pathological point hit'
+- \textcolor{red}{The current problem is that the znd_integrate finds a pathological point at
+the 1st spatial iteration and exits the code.} What I am confused about is how there is an output
+file?
+- What happends if I turn the do_pathological point off? 
+    - it doesn't run
+- bc a pathological point was found it is trying to jump it??? (done in the linearize process)
+- what do these lines mean, associated(orig_vars) \& associated(orig_derivs)
+    - from what I can understand it checks to see if the object has memoery allocated, then returns
+        true or false 
+- ok so what is going on with call eos_get_helm_resuts, like the parameters are wrong for the 
+original code
+    - and it was here I realized that the MESA verison (5819) is not the one that would have worked
+    with the currrent code but likly a more 'recent' version
+- \textcolor{blue}{I was able to fix the pathological point hit by changing the include statments in 
+eos_get_hel_results on (true).} \textcolor{red}{However many mass fractions are zero but there doesn't 
+seem to be negatives, imporvement!}
+
+
+Fixing the 0 mass fractions:
+- net_get has changed, no longer has reuse_rate_raw, reuse_rate_scre & the theta_e also removed 
+the work nets
+    - \textcolor{red}{becoming appareant that Kevin Moore did not use MESA-r5819 but likely 
+    a 'newer' version}
+- I think the issue is that dxdt is not evolving but where?
+- Found a potential issue with how I've been using eosPT_get 
+    - I assmued d_dxa_const_TRho = d_dxa, not the case 
+    - I declared it and allocated it correctly but the issue of zero mass fractions is persistant
+- turns out there are some places inside wd_solver that called on eosDT_get and eosPT_get that didn't 
+get fixed correctly, so fixed it but nothing changed 
+- in the initalize routine there is rates_init that calls on something new 'use\_suzuki\_weak\_rates' 
+turning this on and off does nothing, other than that everything about this seems correct
+- the subroutine net_set_which_rates no longer exist, not sure what to swap this out with 
+- uncommenting net_setup_tables have allowed change to the species, \textcolor{red}{however the 
+species do not perfectly match in abundances the results are a lot better} 
+    - seems like the files I have been comparing too my not be the correct inlist for the output, 
+    as the start of the compared file is 0.01 cm and mine starts at 1 cm and the run time for me 
+    is to 10e10
