@@ -4346,8 +4346,8 @@ module znd
    		t_end = x_start + burn_time**(j*1d0/num_steps)
 		
 		!write(*,*)
-   		write(*,*) 'Step = ', j
-		write(*,*) 't_start = ', t_start 
+   		!write(*,*) 'Step = ', j
+		!write(*,*) 't_start = ', t_start 
 		!write(*,*) 't_end = ', t_end 
 
    		call isolve( &
