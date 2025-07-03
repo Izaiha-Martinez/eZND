@@ -17,13 +17,30 @@
 	!net_file = 'big_he_burn.net'
 	!net_file = 'alpha_ni56.net'
 	!net_file = 'he4_to_c12.net'
-	net_file = 'mesa_204.net'
+	net_file = 'mesa_206.net'
 	!-------------------------------------------------------------------------------------
 	!!!! Add Initial Conditions Here !!!!
 
 	!Ambient conditions:
 	rho0 = 1149329.392221
-	t0 = 3d7	!also t_b in WD mode
+	t0 = 3d7	
+
+	!Initial composition:
+	num_isos_for_Xinit = 5
+	names_of_isos_for_Xinit(1) = 'he4'
+	values_for_Xinit(1) = 5.6194d-27
+	names_of_isos_for_Xinit(2) = 'c12'
+	values_for_Xinit(2) = 4.0000d-01
+	names_of_isos_for_Xinit(3) = 'n14'
+	values_for_Xinit(3) = 1.4000d-29
+	names_of_isos_for_Xinit(4) = 'o16'
+	values_for_Xinit(4) = 5.8214d-01
+	names_of_isos_for_Xinit(5) = 'ne22'
+	values_for_Xinit(5) = 1.3353d-02
+
+	!Detonation and curvature 
+	v_det = 962073057.944435
+	r_curve = 458214068.058917
 
 	!Conditions if mapping to an envelope on a white dwarf:
 	m_c = 0.5		!(msun)
@@ -31,21 +48,6 @@
 	!m_wd = 1.99d33	!(msun = 1.99d33 g)
 	!r_wd = 6.03d8	!(r_earth =  6.37d8 cm)
 	grav_init = 0d0		!cm/s^2
-
-	!Initial composition:
-	!Fiducial for ignition paper:
-	num_isos_for_Xinit = 3
-    names_of_isos_for_Xinit(1) = 'c12'
-    values_for_Xinit(1) = 0.5
-    names_of_isos_for_Xinit(2) = 'o16'
-    values_for_Xinit(2) = 0.5
-    names_of_isos_for_Xinit(3) = 'ne22'
-    values_for_Xinit(3) = 0.00
-
-
-	!Detonation and curvature 
-	v_det = 962073057.944435
-	r_curve = 458214068.058917
 
 	!-------------------------------------------------------------------------------------
 	
