@@ -170,7 +170,7 @@
 	!output_profile_name='./comparison_runs/pathological/r5d5_t1d8_he100_hs1d7_rc3d7_veigen.data'
 	!output_profile_name='comparison_runs/pathological/r5d5_t1d8_he100_hs1d7_hsrc3_veigen.data'
 	!output_profile_name='./diagnosis_runs/r5d5_t1d8_v110d7_he100_hs1d7.data'
-    output_profile_name='./eznd_output.data'
+    !output_profile_name='./eznd_output.data'
 
 	!File name for sweeps through detonation velocity:
 	!output_sweep_name='./blowout_runs/vdet_sweeps/r5d5_t1d8_he90_c10_hs1d6.data'
