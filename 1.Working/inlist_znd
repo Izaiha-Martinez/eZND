@@ -45,6 +45,13 @@
 	!output file name 
     output_profile_name='./eznd_output.data'
 
+	!Turn off for Townselys runs 
+	do_pathological = .true.
+
+	!set the geometry
+	j_curve = 1						!Geometry choice (0: plane parallel, 1: cylindrical, 2: spherical)
+
+
 	!Conditions if mapping to an envelope on a white dwarf:
 	m_c = 0.5		!(msun)
 	!m_env = 0.016 	!white dwarf envelope mass (solar masses)
@@ -102,7 +109,7 @@
 	!Use curvature equations:
 	do_curvature = .true.
 	use_he_clavin = .true.			!False: use my prescription (track R_c(xi)), True: use He & Clavin's prescription
-	j_curve = 2						!Geometry choice (0: plane parallel, 1: cylindrical, 2: spherical)
+	!j_curve = 2						!Geometry choice (0: plane parallel, 1: cylindrical, 2: spherical)
 	use_rc_hs_scaling = .false.		!False: use constant r_curve above, True: use R_c = rc_hs_factor*H_s 
 	rc_hs_factor = 3.0				!R_c = rc_hs_factor*H_s (R_c ~ 3*d, d~5*H_s)
 	!-------------------------------------------------------------------------------------
@@ -147,7 +154,7 @@
 	!(for constant densities, we found d = 5*H_s)
 	do_rho_sweep = .false.
 
-	do_pathological = .true.
+	!do_pathological = .true.
 
 	!If true, sweep through compositions (hardcoded for now), for a fixed h_scale and computing l_znd with that (down to when you hit a sonic point)
 	!do_lznd_comp = .false. !(not yet implemented...)
