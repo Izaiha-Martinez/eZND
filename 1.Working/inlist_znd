@@ -51,6 +51,8 @@
 	!set the geometry
 	j_curve = 1						!Geometry choice (0: plane parallel, 1: cylindrical, 2: spherical)
 
+	!Set the boundary, make sure it is a percentage of R_curve
+	burn_time = 1d10		!sec (or cm for znd since we're doing a spatial integration)
 
 	!Conditions if mapping to an envelope on a white dwarf:
 	m_c = 0.5		!(msun)
@@ -260,7 +262,6 @@
 
 	!Integration time:
 	!burn_time = 2d0		!sec (or cm for znd since we're doing a spatial integration)	
-	burn_time = 1d10		!sec (or cm for znd since we're doing a spatial integration)
 
 	!When to cut off integration (and say we hit the sonic point)
 	!sonic_limit = 0.99999		!mach number
