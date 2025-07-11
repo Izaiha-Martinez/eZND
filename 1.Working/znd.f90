@@ -4370,6 +4370,16 @@ module znd
             if(associated(orig_derivs)) deallocate(orig_derivs)
    			stop 1
    		end if
+
+		! Moved the writing of the output file to before the exit statments
+		if(output_profile) then
+   			write(profile_io, '(i30,999ES30.20)') j, t_end, vars, rpar(1), &
+   				rpar(8), rpar(10), rpar(2), rpar(9), mass_flux, mom_flux, energy_flux, &
+   				rpar(11), rpar(12), rpar(13), rpar(14), rpar(15), rpar(16)
+   				!dP_dx, dE_dx, dq_dx, detot_dx, dEtot_dx_eqn
+   				!rpar(6), rpar(7), rpar(8:8+num_vars-1), rpar(8+num_vars)
+   		endif
+
    		!Check if we've slowed down too much (good stopping criterion for curvature)
    		if (rpar(2).lt.1d-2) then
    			write(*,*) 'ux/cs dropped below 0.01 - exiting integration...'
@@ -4420,13 +4430,14 @@ module znd
    			endif
    		endif
 		
-   		if(output_profile) then
-   			write(profile_io, '(i30,999ES30.20)') j, t_end, vars, rpar(1), &
-   				rpar(8), rpar(10), rpar(2), rpar(9), mass_flux, mom_flux, energy_flux, &
-   				rpar(11), rpar(12), rpar(13), rpar(14), rpar(15), rpar(16)
-   				!dP_dx, dE_dx, dq_dx, detot_dx, dEtot_dx_eqn
-   				!rpar(6), rpar(7), rpar(8:8+num_vars-1), rpar(8+num_vars)
-   		endif
+		! Moved the writing of the output file to before the exit statments
+   		! if(output_profile) then
+   		! 	write(profile_io, '(i30,999ES30.20)') j, t_end, vars, rpar(1), &
+   		! 		rpar(8), rpar(10), rpar(2), rpar(9), mass_flux, mom_flux, energy_flux, &
+   		! 		rpar(11), rpar(12), rpar(13), rpar(14), rpar(15), rpar(16)
+   		! 		!dP_dx, dE_dx, dq_dx, detot_dx, dEtot_dx_eqn
+   		! 		!rpar(6), rpar(7), rpar(8:8+num_vars-1), rpar(8+num_vars)
+   		! endif
 			
 		end do !Integration loop
 		
