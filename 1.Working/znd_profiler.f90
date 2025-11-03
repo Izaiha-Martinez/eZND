@@ -186,7 +186,7 @@ module znd_test
 	!Specific variables for the burn inlist:
     double precision :: rho0, t0, p0, cs0, g0	!Initial thermodynamic conditions
     double precision :: burn_rho, logRho, burn_t, burn_P, logT, burn_time, burn_u, burn_e
-    integer, parameter :: max_num_isos_for_Xinit = 100
+    integer, parameter :: max_num_isos_for_Xinit = 210
     character(len=iso_name_length) :: names_of_isos_for_Xinit(max_num_isos_for_Xinit)
     character(len=iso_name_length) :: names_of_isos_for_Xcj(max_num_isos_for_Xinit)
     character(len=iso_name_length) :: cj_final_iso, cj_final_iso2

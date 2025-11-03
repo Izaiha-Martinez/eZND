@@ -51,7 +51,7 @@ module wd_solver
 	!Composition variables:
 	integer, pointer :: chem_id(:), net_iso(:)
 	double precision, pointer :: xa_wd(:), xa_env(:)
-	integer, parameter :: max_num_isos_for_Xinit = 100
+	integer, parameter :: max_num_isos_for_Xinit = 210
 	integer :: num_isos_for_Xinit, species_wd
 	character(len=iso_name_length) :: names_of_isos_for_Xinit(max_num_isos_for_Xinit)
     double precision :: values_for_Xinit(max_num_isos_for_Xinit)
