@@ -17,7 +17,8 @@
 	!net_file = 'big_he_burn.net'
 	!net_file = 'alpha_ni56.net'
 	!net_file = 'he4_to_c12.net'
-	net_file = 'mesa_206.net'
+	net_file = '/grps2/dmtownsley/iemartinez/eZND_Initial/1.Working/nets/mesa_204_plus_p29.net'
+	!net_file = 'mesa_206.net'
 	!-------------------------------------------------------------------------------------
 	!!!! Add Initial Conditions Here !!!!
 
