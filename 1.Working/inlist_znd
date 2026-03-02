@@ -23,28 +23,15 @@
 	!!!! Add Initial Conditions Here !!!!
 
 	!Ambient conditions:
-	rho0 = 134445.95165839864
-	t0 = 1112691599.1377158
-
-	!Initial composition:
-	num_isos_for_Xinit = 5
-	names_of_isos_for_Xinit(1) = 'he4'
-	values_for_Xinit(1) = 3.708781832475324e-11
-	names_of_isos_for_Xinit(2) = 'c12'
-	values_for_Xinit(2) = 1.5937096356788438e-09
-	names_of_isos_for_Xinit(3) = 'n14'
-	values_for_Xinit(3) = 1.5049108136821798e-17
-	names_of_isos_for_Xinit(4) = 'o16'
-	values_for_Xinit(4) = 1.0580006383938965e-08
-	names_of_isos_for_Xinit(5) = 'ne22'
-	values_for_Xinit(5) = 2.9774596611523696e-24
+	rho0 = 2117945.7854387187
+	t0 = 30928213.9260796
 
 	!Detonation and curvature 
-	v_det = 1312416692.299759
-	r_curve = 482351587.67886513
+	!v_det = 1309713163.470946
+	r_curve = 731172398.1525441
 
 	!output file name 
-    output_profile_name='./eznd_output.data'
+    output_profile_name='Data/eznd_output.data'
 
 	!Turn off for Townselys runs 
 	do_pathological = .true.
@@ -53,7 +40,7 @@
 	j_curve = 1						!Geometry choice (0: plane parallel, 1: cylindrical, 2: spherical)
 
 	!Set the boundary, make sure it is a percentage of R_curve
-	burn_time = 1d10		!sec (or cm for znd since we're doing a spatial integration)
+	burn_time = 51182067.8706781		!sec (or cm for znd since we're doing a spatial integration)
 
 	!Conditions if mapping to an envelope on a white dwarf:
 	m_c = 0.5		!(msun)
@@ -61,6 +48,621 @@
 	!m_wd = 1.99d33	!(msun = 1.99d33 g)
 	!r_wd = 6.03d8	!(r_earth =  6.37d8 cm)
 	grav_init = 0d0		!cm/s^2
+
+	!Initial composition:
+	num_isos_for_Xinit = 204
+
+	names_of_isos_for_Xinit(1) = 'h1'
+	values_for_Xinit(1) = 1.0000000000075336e-30
+
+	names_of_isos_for_Xinit(2) = 'h2'
+	values_for_Xinit(2) = 2e-30
+
+	names_of_isos_for_Xinit(3) = 'he3'
+	values_for_Xinit(3) = 3.0000000000000003e-30
+
+	names_of_isos_for_Xinit(4) = 'he4'
+	values_for_Xinit(4) = 4.0000000199128544e-30
+
+	names_of_isos_for_Xinit(5) = 'li6'
+	values_for_Xinit(5) = 6.0000000000000005e-30
+
+	names_of_isos_for_Xinit(6) = 'li7'
+	values_for_Xinit(6) = 7e-30
+
+	names_of_isos_for_Xinit(7) = 'be7'
+	values_for_Xinit(7) = 7e-30
+
+	names_of_isos_for_Xinit(8) = 'be9'
+	values_for_Xinit(8) = 9.000000000000001e-30
+
+	names_of_isos_for_Xinit(9) = 'be10'
+	values_for_Xinit(9) = 1.0000000000000001e-29
+
+	names_of_isos_for_Xinit(10) = 'b8'
+	values_for_Xinit(10) = 8e-30
+
+	names_of_isos_for_Xinit(11) = 'b10'
+	values_for_Xinit(11) = 1.0000000000000001e-29
+
+	names_of_isos_for_Xinit(12) = 'b11'
+	values_for_Xinit(12) = 1.1000000000000001e-29
+
+	names_of_isos_for_Xinit(13) = 'c12'
+	values_for_Xinit(13) = 0.4
+
+	names_of_isos_for_Xinit(14) = 'c13'
+	values_for_Xinit(14) = 1.3000000800968712e-29
+
+	names_of_isos_for_Xinit(15) = 'n13'
+	values_for_Xinit(15) = 1.3e-29
+
+	names_of_isos_for_Xinit(16) = 'n14'
+	values_for_Xinit(16) = 1.4e-29
+
+	names_of_isos_for_Xinit(17) = 'n15'
+	values_for_Xinit(17) = 1.5e-29
+
+	names_of_isos_for_Xinit(18) = 'n16'
+	values_for_Xinit(18) = 1.6e-29
+
+	names_of_isos_for_Xinit(19) = 'o15'
+	values_for_Xinit(19) = 1.5e-29
+
+	names_of_isos_for_Xinit(20) = 'o16'
+	values_for_Xinit(20) = 0.5821365043344487
+
+	names_of_isos_for_Xinit(21) = 'o17'
+	values_for_Xinit(21) = 2.2708286329863318e-06
+
+	names_of_isos_for_Xinit(22) = 'o18'
+	values_for_Xinit(22) = 1.2929561335816784e-05
+
+	names_of_isos_for_Xinit(23) = 'o19'
+	values_for_Xinit(23) = 1.9000000000004598e-29
+
+	names_of_isos_for_Xinit(24) = 'f17'
+	values_for_Xinit(24) = 1.7000000000000001e-29
+
+	names_of_isos_for_Xinit(25) = 'f18'
+	values_for_Xinit(25) = 1.8000000000000004e-29
+
+	names_of_isos_for_Xinit(26) = 'f19'
+	values_for_Xinit(26) = 5.057426042101612e-07
+
+	names_of_isos_for_Xinit(27) = 'f20'
+	values_for_Xinit(27) = 2.0000000000013202e-29
+
+	names_of_isos_for_Xinit(28) = 'ne19'
+	values_for_Xinit(28) = 1.9000000000000002e-29
+
+	names_of_isos_for_Xinit(29) = 'ne20'
+	values_for_Xinit(29) = 0.0011623544567326896
+
+	names_of_isos_for_Xinit(30) = 'ne21'
+	values_for_Xinit(30) = 2.925922602579266e-06
+
+	names_of_isos_for_Xinit(31) = 'ne22'
+	values_for_Xinit(31) = 0.013352935347684388
+
+	names_of_isos_for_Xinit(32) = 'ne23'
+	values_for_Xinit(32) = 2.3000000321534465e-29
+
+	names_of_isos_for_Xinit(33) = 'na21'
+	values_for_Xinit(33) = 2.1000000000000002e-29
+
+	names_of_isos_for_Xinit(34) = 'na22'
+	values_for_Xinit(34) = 2.2000000000000002e-29
+
+	names_of_isos_for_Xinit(35) = 'na23'
+	values_for_Xinit(35) = 2.9291856893168324e-05
+
+	names_of_isos_for_Xinit(36) = 'na24'
+	values_for_Xinit(36) = 2.4000000145123233e-29
+
+	names_of_isos_for_Xinit(37) = 'mg23'
+	values_for_Xinit(37) = 2.3000000000000002e-29
+
+	names_of_isos_for_Xinit(38) = 'mg24'
+	values_for_Xinit(38) = 0.0005530142384619301
+
+	names_of_isos_for_Xinit(39) = 'mg25'
+	values_for_Xinit(39) = 7.295194831429329e-05
+
+	names_of_isos_for_Xinit(40) = 'mg26'
+	values_for_Xinit(40) = 8.346132231554118e-05
+
+	names_of_isos_for_Xinit(41) = 'mg27'
+	values_for_Xinit(41) = 2.700000000158743e-29
+
+	names_of_isos_for_Xinit(42) = 'al25'
+	values_for_Xinit(42) = 2.5000000000000002e-29
+
+	names_of_isos_for_Xinit(43) = 'al26'
+	values_for_Xinit(43) = 2.6e-29
+
+	names_of_isos_for_Xinit(44) = 'al27'
+	values_for_Xinit(44) = 5.5754382825089e-05
+
+	names_of_isos_for_Xinit(45) = 'al28'
+	values_for_Xinit(45) = 2.8000000140178283e-29
+
+	names_of_isos_for_Xinit(46) = 'si27'
+	values_for_Xinit(46) = 2.7e-29
+
+	names_of_isos_for_Xinit(47) = 'si28'
+	values_for_Xinit(47) = 0.0006121885920416678
+
+	names_of_isos_for_Xinit(48) = 'si29'
+	values_for_Xinit(48) = 3.219581119345868e-05
+
+	names_of_isos_for_Xinit(49) = 'si30'
+	values_for_Xinit(49) = 2.1954069795159635e-05
+
+	names_of_isos_for_Xinit(50) = 'si31'
+	values_for_Xinit(50) = 3.1000000217082513e-29
+
+	names_of_isos_for_Xinit(51) = 'si32'
+	values_for_Xinit(51) = 3.200000000000001e-29
+
+	names_of_isos_for_Xinit(52) = 'si33'
+	values_for_Xinit(52) = 3.300000000000001e-29
+
+	names_of_isos_for_Xinit(53) = 'p29'
+	values_for_Xinit(53) = 2.9e-29
+
+	names_of_isos_for_Xinit(54) = 'p30'
+	values_for_Xinit(54) = 3.000000000000001e-29
+
+	names_of_isos_for_Xinit(55) = 'p31'
+	values_for_Xinit(55) = 5.837222854074587e-06
+
+	names_of_isos_for_Xinit(56) = 'p32'
+	values_for_Xinit(56) = 3.2000000000186454e-29
+
+	names_of_isos_for_Xinit(57) = 'p33'
+	values_for_Xinit(57) = 3.043797948554034e-27
+
+	names_of_isos_for_Xinit(58) = 'p34'
+	values_for_Xinit(58) = 3.400000000000001e-29
+
+	names_of_isos_for_Xinit(59) = 's31'
+	values_for_Xinit(59) = 3.100000000000001e-29
+
+	names_of_isos_for_Xinit(60) = 's32'
+	values_for_Xinit(60) = 0.0002936280663295052
+
+	names_of_isos_for_Xinit(61) = 's33'
+	values_for_Xinit(61) = 2.3901234757034167e-06
+
+	names_of_isos_for_Xinit(62) = 's34'
+	values_for_Xinit(62) = 1.3838428224673993e-05
+
+	names_of_isos_for_Xinit(63) = 's35'
+	values_for_Xinit(63) = 2.3949246141331183e-26
+
+	names_of_isos_for_Xinit(64) = 's36'
+	values_for_Xinit(64) = 5.909830478127455e-08
+
+	names_of_isos_for_Xinit(65) = 's37'
+	values_for_Xinit(65) = 3.700000000000452e-29
+
+	names_of_isos_for_Xinit(66) = 'cl35'
+	values_for_Xinit(66) = 6.143280374492432e-06
+
+	names_of_isos_for_Xinit(67) = 'cl36'
+	values_for_Xinit(67) = 3.6000000019267476e-29
+
+	names_of_isos_for_Xinit(68) = 'cl37'
+	values_for_Xinit(68) = 2.0765994697857834e-06
+
+	names_of_isos_for_Xinit(69) = 'cl38'
+	values_for_Xinit(69) = 3.8000000002675536e-29
+
+	names_of_isos_for_Xinit(70) = 'ar35'
+	values_for_Xinit(70) = 3.500000000000001e-29
+
+	names_of_isos_for_Xinit(71) = 'ar36'
+	values_for_Xinit(71) = 6.170904582242875e-05
+
+	names_of_isos_for_Xinit(72) = 'ar37'
+	values_for_Xinit(72) = 3.700000028557707e-29
+
+	names_of_isos_for_Xinit(73) = 'ar38'
+	values_for_Xinit(73) = 1.184218337131943e-05
+
+	names_of_isos_for_Xinit(74) = 'ar39'
+	values_for_Xinit(74) = 3.9011934044857803e-29
+
+	names_of_isos_for_Xinit(75) = 'ar40'
+	values_for_Xinit(75) = 1.9938013194580164e-08
+
+	names_of_isos_for_Xinit(76) = 'ar41'
+	values_for_Xinit(76) = 4.1000000000011124e-29
+
+	names_of_isos_for_Xinit(77) = 'k39'
+	values_for_Xinit(77) = 2.8546939985627204e-06
+
+	names_of_isos_for_Xinit(78) = 'k40'
+	values_for_Xinit(78) = 3.664602720936595e-10
+
+	names_of_isos_for_Xinit(79) = 'k41'
+	values_for_Xinit(79) = 2.165814485117763e-07
+
+	names_of_isos_for_Xinit(80) = 'k42'
+	values_for_Xinit(80) = 4.200000000427677e-29
+
+	names_of_isos_for_Xinit(81) = 'k43'
+	values_for_Xinit(81) = 4.3000000000000004e-29
+
+	names_of_isos_for_Xinit(82) = 'k44'
+	values_for_Xinit(82) = 4.4000000000000004e-29
+
+	names_of_isos_for_Xinit(83) = 'ca39'
+	values_for_Xinit(83) = 3.9000000000000003e-29
+
+	names_of_isos_for_Xinit(84) = 'ca40'
+	values_for_Xinit(84) = 6.214032499845508e-05
+
+	names_of_isos_for_Xinit(85) = 'ca41'
+	values_for_Xinit(85) = 4.100000004414081e-29
+
+	names_of_isos_for_Xinit(86) = 'ca42'
+	values_for_Xinit(86) = 4.354495465786506e-07
+
+	names_of_isos_for_Xinit(87) = 'ca43'
+	values_for_Xinit(87) = 9.302463162883693e-08
+
+	names_of_isos_for_Xinit(88) = 'ca44'
+	values_for_Xinit(88) = 1.4707529750067809e-06
+
+	names_of_isos_for_Xinit(89) = 'ca45'
+	values_for_Xinit(89) = 5.964367071853943e-29
+
+	names_of_isos_for_Xinit(90) = 'ca46'
+	values_for_Xinit(90) = 2.9484433834675796e-09
+
+	names_of_isos_for_Xinit(91) = 'ca47'
+	values_for_Xinit(91) = 4.700000000000317e-29
+
+	names_of_isos_for_Xinit(92) = 'ca48'
+	values_for_Xinit(92) = 1.4383532433542764e-07
+
+	names_of_isos_for_Xinit(93) = 'ca49'
+	values_for_Xinit(93) = 4.900000000005474e-29
+
+	names_of_isos_for_Xinit(94) = 'sc43'
+	values_for_Xinit(94) = 4.3000000000000004e-29
+
+	names_of_isos_for_Xinit(95) = 'sc44'
+	values_for_Xinit(95) = 4.4000000000000004e-29
+
+	names_of_isos_for_Xinit(96) = 'sc45'
+	values_for_Xinit(96) = 4.6558542373141465e-08
+
+	names_of_isos_for_Xinit(97) = 'sc46'
+	values_for_Xinit(97) = 4.600000000194651e-29
+
+	names_of_isos_for_Xinit(98) = 'sc47'
+	values_for_Xinit(98) = 4.9339942895878675e-29
+
+	names_of_isos_for_Xinit(99) = 'sc48'
+	values_for_Xinit(99) = 4.8000000000000004e-29
+
+	names_of_isos_for_Xinit(100) = 'sc49'
+	values_for_Xinit(100) = 4.9000000000000004e-29
+
+	names_of_isos_for_Xinit(101) = 'sc50'
+	values_for_Xinit(101) = 5.0000000000000004e-29
+
+	names_of_isos_for_Xinit(102) = 'sc51'
+	values_for_Xinit(102) = 5.100000000000001e-29
+
+	names_of_isos_for_Xinit(103) = 'ti43'
+	values_for_Xinit(103) = 4.3000000000000004e-29
+
+	names_of_isos_for_Xinit(104) = 'ti44'
+	values_for_Xinit(104) = 4.4000000000000004e-29
+
+	names_of_isos_for_Xinit(105) = 'ti45'
+	values_for_Xinit(105) = 4.5000000000000004e-29
+
+	names_of_isos_for_Xinit(106) = 'ti46'
+	values_for_Xinit(106) = 2.476994274506283e-07
+
+	names_of_isos_for_Xinit(107) = 'ti47'
+	values_for_Xinit(107) = 2.281723410980826e-07
+
+	names_of_isos_for_Xinit(108) = 'ti48'
+	values_for_Xinit(108) = 2.309769532886156e-06
+
+	names_of_isos_for_Xinit(109) = 'ti49'
+	values_for_Xinit(109) = 1.7300716557905406e-07
+
+	names_of_isos_for_Xinit(110) = 'ti50'
+	values_for_Xinit(110) = 1.6922022736490527e-07
+
+	names_of_isos_for_Xinit(111) = 'ti51'
+	values_for_Xinit(111) = 5.100000000003994e-29
+
+	names_of_isos_for_Xinit(112) = 'ti52'
+	values_for_Xinit(112) = 5.2e-29
+
+	names_of_isos_for_Xinit(113) = 'ti53'
+	values_for_Xinit(113) = 5.3e-29
+
+	names_of_isos_for_Xinit(114) = 'ti54'
+	values_for_Xinit(114) = 5.400000000000002e-29
+
+	names_of_isos_for_Xinit(115) = 'v47'
+	values_for_Xinit(115) = 4.7000000000000004e-29
+
+	names_of_isos_for_Xinit(116) = 'v48'
+	values_for_Xinit(116) = 4.8000000000000004e-29
+
+	names_of_isos_for_Xinit(117) = 'v49'
+	values_for_Xinit(117) = 4.9000000000000004e-29
+
+	names_of_isos_for_Xinit(118) = 'v50'
+	values_for_Xinit(118) = 7.782912539103527e-10
+
+	names_of_isos_for_Xinit(119) = 'v51'
+	values_for_Xinit(119) = 3.171171490955457e-07
+
+	names_of_isos_for_Xinit(120) = 'v52'
+	values_for_Xinit(120) = 5.200000001713288e-29
+
+	names_of_isos_for_Xinit(121) = 'v53'
+	values_for_Xinit(121) = 5.3e-29
+
+	names_of_isos_for_Xinit(122) = 'v54'
+	values_for_Xinit(122) = 5.400000000000002e-29
+
+	names_of_isos_for_Xinit(123) = 'v55'
+	values_for_Xinit(123) = 5.500000000000001e-29
+
+	names_of_isos_for_Xinit(124) = 'v56'
+	values_for_Xinit(124) = 5.600000000000002e-29
+
+	names_of_isos_for_Xinit(125) = 'cr47'
+	values_for_Xinit(125) = 4.7000000000000004e-29
+
+	names_of_isos_for_Xinit(126) = 'cr48'
+	values_for_Xinit(126) = 4.8000000000000004e-29
+
+	names_of_isos_for_Xinit(127) = 'cr49'
+	values_for_Xinit(127) = 4.9000000000000004e-29
+
+	names_of_isos_for_Xinit(128) = 'cr50'
+	values_for_Xinit(128) = 6.94581282787171e-07
+
+	names_of_isos_for_Xinit(129) = 'cr51'
+	values_for_Xinit(129) = 5.100000003402097e-29
+
+	names_of_isos_for_Xinit(130) = 'cr52'
+	values_for_Xinit(130) = 1.392861696545956e-05
+
+	names_of_isos_for_Xinit(131) = 'cr53'
+	values_for_Xinit(131) = 1.6097280276823748e-06
+
+	names_of_isos_for_Xinit(132) = 'cr54'
+	values_for_Xinit(132) = 4.0821615425649853e-07
+
+	names_of_isos_for_Xinit(133) = 'cr55'
+	values_for_Xinit(133) = 5.500000000118007e-29
+
+	names_of_isos_for_Xinit(134) = 'cr56'
+	values_for_Xinit(134) = 5.600000000000002e-29
+
+	names_of_isos_for_Xinit(135) = 'cr57'
+	values_for_Xinit(135) = 5.7e-29
+
+	names_of_isos_for_Xinit(136) = 'cr58'
+	values_for_Xinit(136) = 5.800000000000002e-29
+
+	names_of_isos_for_Xinit(137) = 'mn51'
+	values_for_Xinit(137) = 5.100000000000001e-29
+
+	names_of_isos_for_Xinit(138) = 'mn52'
+	values_for_Xinit(138) = 5.2e-29
+
+	names_of_isos_for_Xinit(139) = 'mn53'
+	values_for_Xinit(139) = 5.3e-29
+
+	names_of_isos_for_Xinit(140) = 'mn54'
+	values_for_Xinit(140) = 5.400000608501849e-29
+
+	names_of_isos_for_Xinit(141) = 'mn55'
+	values_for_Xinit(141) = 1.084140460107727e-05
+
+	names_of_isos_for_Xinit(142) = 'mn56'
+	values_for_Xinit(142) = 5.600000070870824e-29
+
+	names_of_isos_for_Xinit(143) = 'mn57'
+	values_for_Xinit(143) = 5.7e-29
+
+	names_of_isos_for_Xinit(144) = 'mn58'
+	values_for_Xinit(144) = 5.800000000000002e-29
+
+	names_of_isos_for_Xinit(145) = 'mn59'
+	values_for_Xinit(145) = 5.900000000000001e-29
+
+	names_of_isos_for_Xinit(146) = 'fe51'
+	values_for_Xinit(146) = 5.100000000000001e-29
+
+	names_of_isos_for_Xinit(147) = 'fe52'
+	values_for_Xinit(147) = 5.2e-29
+
+	names_of_isos_for_Xinit(148) = 'fe53'
+	values_for_Xinit(148) = 5.3e-29
+
+	names_of_isos_for_Xinit(149) = 'fe54'
+	values_for_Xinit(149) = 7.309769591700924e-05
+
+	names_of_isos_for_Xinit(150) = 'fe55'
+	values_for_Xinit(150) = 5.500000159116325e-29
+
+	names_of_isos_for_Xinit(151) = 'fe56'
+	values_for_Xinit(151) = 0.001189924837893852
+
+	names_of_isos_for_Xinit(152) = 'fe57'
+	values_for_Xinit(152) = 2.797207303185032e-05
+
+	names_of_isos_for_Xinit(153) = 'fe58'
+	values_for_Xinit(153) = 3.78781325347466e-06
+
+	names_of_isos_for_Xinit(154) = 'fe59'
+	values_for_Xinit(154) = 5.90000000179511e-29
+
+	names_of_isos_for_Xinit(155) = 'fe60'
+	values_for_Xinit(155) = 6.000000000000002e-29
+
+	names_of_isos_for_Xinit(156) = 'fe61'
+	values_for_Xinit(156) = 6.1e-29
+
+	names_of_isos_for_Xinit(157) = 'fe62'
+	values_for_Xinit(157) = 6.200000000000002e-29
+
+	names_of_isos_for_Xinit(158) = 'fe63'
+	values_for_Xinit(158) = 6.300000000000001e-29
+
+	names_of_isos_for_Xinit(159) = 'fe64'
+	values_for_Xinit(159) = 6.400000000000002e-29
+
+	names_of_isos_for_Xinit(160) = 'fe65'
+	values_for_Xinit(160) = 6.5e-29
+
+	names_of_isos_for_Xinit(161) = 'fe66'
+	values_for_Xinit(161) = 6.600000000000002e-29
+
+	names_of_isos_for_Xinit(162) = 'co55'
+	values_for_Xinit(162) = 5.500000000000001e-29
+
+	names_of_isos_for_Xinit(163) = 'co56'
+	values_for_Xinit(163) = 5.600000000000002e-29
+
+	names_of_isos_for_Xinit(164) = 'co57'
+	values_for_Xinit(164) = 5.7e-29
+
+	names_of_isos_for_Xinit(165) = 'co58'
+	values_for_Xinit(165) = 5.800000000000002e-29
+
+	names_of_isos_for_Xinit(166) = 'co59'
+	values_for_Xinit(166) = 4.222525588171925e-06
+
+	names_of_isos_for_Xinit(167) = 'co60'
+	values_for_Xinit(167) = 6.000000002736973e-29
+
+	names_of_isos_for_Xinit(168) = 'co61'
+	values_for_Xinit(168) = 6.1e-29
+
+	names_of_isos_for_Xinit(169) = 'co62'
+	values_for_Xinit(169) = 6.200000000000002e-29
+
+	names_of_isos_for_Xinit(170) = 'co63'
+	values_for_Xinit(170) = 6.300000000000001e-29
+
+	names_of_isos_for_Xinit(171) = 'co64'
+	values_for_Xinit(171) = 6.400000000000002e-29
+
+	names_of_isos_for_Xinit(172) = 'co65'
+	values_for_Xinit(172) = 6.5e-29
+
+	names_of_isos_for_Xinit(173) = 'co66'
+	values_for_Xinit(173) = 6.600000000000002e-29
+
+	names_of_isos_for_Xinit(174) = 'co67'
+	values_for_Xinit(174) = 6.700000000000001e-29
+
+	names_of_isos_for_Xinit(175) = 'ni55'
+	values_for_Xinit(175) = 5.500000000000001e-29
+
+	names_of_isos_for_Xinit(176) = 'ni56'
+	values_for_Xinit(176) = 5.600000000000002e-29
+
+	names_of_isos_for_Xinit(177) = 'ni57'
+	values_for_Xinit(177) = 5.7e-29
+
+	names_of_isos_for_Xinit(178) = 'ni58'
+	values_for_Xinit(178) = 4.7990580228469485e-05
+
+	names_of_isos_for_Xinit(179) = 'ni59'
+	values_for_Xinit(179) = 5.900000018030512e-29
+
+	names_of_isos_for_Xinit(180) = 'ni60'
+	values_for_Xinit(180) = 1.9122587439043977e-05
+
+	names_of_isos_for_Xinit(181) = 'ni61'
+	values_for_Xinit(181) = 8.451194686903868e-07
+
+	names_of_isos_for_Xinit(182) = 'ni62'
+	values_for_Xinit(182) = 2.7387147174987695e-06
+
+	names_of_isos_for_Xinit(183) = 'ni63'
+	values_for_Xinit(183) = 5.900101774369145e-28
+
+	names_of_isos_for_Xinit(184) = 'ni64'
+	values_for_Xinit(184) = 7.199906896000305e-07
+
+	names_of_isos_for_Xinit(185) = 'ni65'
+	values_for_Xinit(185) = 6.500000000045074e-29
+
+	names_of_isos_for_Xinit(186) = 'ni66'
+	values_for_Xinit(186) = 6.600000000000002e-29
+
+	names_of_isos_for_Xinit(187) = 'ni67'
+	values_for_Xinit(187) = 6.700000000000001e-29
+
+	names_of_isos_for_Xinit(188) = 'ni68'
+	values_for_Xinit(188) = 6.800000000000002e-29
+
+	names_of_isos_for_Xinit(189) = 'cu59'
+	values_for_Xinit(189) = 5.900000000000001e-29
+
+	names_of_isos_for_Xinit(190) = 'cu60'
+	values_for_Xinit(190) = 6.000000000000002e-29
+
+	names_of_isos_for_Xinit(191) = 'cu61'
+	values_for_Xinit(191) = 6.1e-29
+
+	names_of_isos_for_Xinit(192) = 'cu62'
+	values_for_Xinit(192) = 6.200000000000002e-29
+
+	names_of_isos_for_Xinit(193) = 'cu63'
+	values_for_Xinit(193) = 4.943259457593505e-07
+
+	names_of_isos_for_Xinit(194) = 'cu64'
+	values_for_Xinit(194) = 3.8743814656552023e-28
+
+	names_of_isos_for_Xinit(195) = 'cu65'
+	values_for_Xinit(195) = 2.272811163114778e-07
+
+	names_of_isos_for_Xinit(196) = 'cu66'
+	values_for_Xinit(196) = 6.600000000790386e-29
+
+	names_of_isos_for_Xinit(197) = 'zn59'
+	values_for_Xinit(197) = 5.900000000000001e-29
+
+	names_of_isos_for_Xinit(198) = 'zn60'
+	values_for_Xinit(198) = 6.000000000000002e-29
+
+	names_of_isos_for_Xinit(199) = 'zn61'
+	values_for_Xinit(199) = 6.1e-29
+
+	names_of_isos_for_Xinit(200) = 'zn62'
+	values_for_Xinit(200) = 6.200000000000002e-29
+
+	names_of_isos_for_Xinit(201) = 'zn63'
+	values_for_Xinit(201) = 6.300000000000001e-29
+
+	names_of_isos_for_Xinit(202) = 'zn64'
+	values_for_Xinit(202) = 1.0939687031506625e-06
+
+	names_of_isos_for_Xinit(203) = 'zn65'
+	values_for_Xinit(203) = 6.500000001832728e-29
+
+	names_of_isos_for_Xinit(204) = 'zn66'
+	values_for_Xinit(204) = 6.472363504483195e-07
 
 	!-------------------------------------------------------------------------------------
 	
@@ -103,7 +705,7 @@
 	delta_y_init = 1d4	!cm
 
 	!Parameters used in either do_blowout or do_blowout_local
-	h_scale = 1d7			!cm
+	!h_scale = 1d7			!cm
 	uy_init = 0d0			!cm/s
 	use_uy_ux_ratio = .false.		!if true, then set uy_init = ux_init*uy_ux_ratio
 	uy_ux_ratio = 0.75
@@ -129,13 +731,13 @@
 	do_constp = .false.
 
 	!Run a single ZND integration
-	do_znd = .true. 	
+	do_znd = .false. 	
 
 	!Given a v_det, search for a h_scale value that will make v_det a generalized CJ velocity:
 	do_h_search = .false.
 
 	!Given an h_scale, search for a v_det value that will make v_det a generalized CJ velocity:
-	do_vdet_search = .false.
+	do_vdet_search = .true.
 
 	!Iterate through v_det values, calculating the max mach number, sonic point location, etc. for each velocity:
 	do_sweep = .false.
@@ -224,16 +826,15 @@
 	h_search_xmax = 1d10		!cm
 
 	!Controls for if we're doing a search for v_det (set do_vdet_search true)
-	vdet_search_h_scale = 2d7                       !cm
-	!vdet_search_bracket_low = 0.5d9         		!cm/s
-	!vdet_search_bracket_high = .75d9        		!cm/s
-    vdet_search_bracket_low = 0.75d8                !cm/s
-    vdet_search_bracket_high = .25d9        		!cm/s
-	!vdet_search_bracket_high = 1.065e9      		!cm/s
+	vdet_search_h_scale = 1d7                       !cm
+
+    vdet_search_bracket_low  = 7d8                	!cm/s
+    vdet_search_bracket_high = 2d9        			!cm/s
+
     vdet_search_numsteps = 100              
     vdet_search_tol = 1d-5                          !For jumping the pathologica
     !vdet_search_tol = 1d-3                         !When using this as a CJ sol
-    vdet_search_xmax = 1d9                          !cm
+    vdet_search_xmax = 1.5d9                          !cm
 
 
 	!Controls for sweeping through WD M_env values:

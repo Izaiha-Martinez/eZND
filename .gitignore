@@ -3,10 +3,13 @@
 *.mod
 *.smod
 
-#Output files
+#Output files & folders 
 *.data
 *.dat
 *.bin
+*.out
+.mesa_temp_cache/
+mesa/
 
 #Executables
 run_profiler
@@ -18,3 +21,6 @@ test
 #My Save Files 
 *.csv 
 *.ipynb
+
+#Folders 
+**/Data/
