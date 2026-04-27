@@ -4256,6 +4256,7 @@ module znd
     	implicit none
     	
     	double precision, intent(in) :: x_start, x_end		!Integration bounds
+    	double precision :: log_t_min, log_t_max, dlog		!New Integration bounds
     	integer, intent(in) :: num_steps	!Number of integration steps
     	logical, intent(in) :: output_profile !Whether to print output during the integration or not
     	integer, intent(in) :: profile_io !IO unit for profile output
@@ -4337,14 +4338,24 @@ module znd
 		gone_sonic = .false.
 		
 		write(*,*) 'Starting the isolve loop, running...'
+
+		!Added a new grid for consistency when increasing burn times 
+		log_t_min = 0d0          ! log10(1 cm) = 0
+		log_t_max = log10(burn_time)
+		dlog = (log_t_max - log_t_min) / num_steps
+
 		do j=1,num_steps
    		!Evenly spaced timesteps in log
    		!t_start = h_search_xmax*10**(log10(h_search_xmax)*((k-1)*1d0/num_steps-1))
    		!t_end = h_search_xmax*10**(log10(h_search_xmax)*(k*1d0/num_steps-1))
-   		!should be equivalent to:
-   		t_start = x_start + burn_time**((j-1)*1d0/num_steps)
-   		t_end = x_start + burn_time**(j*1d0/num_steps)
-		
+   		!should be equivalent to:	
+   		! t_start = x_start + burn_time**((j-1)*1d0/num_steps)				!Original grid 
+   		! t_end = x_start + burn_time**(j*1d0/num_steps)					!Original grid 
+
+		!Uniform grid
+		t_start = x_start + 10d0**((j-1)*dlog)
+		t_end   = x_start + 10d0**(j*dlog)
+
 		!write(*,*)
    		!write(*,*) 'Step = ', j
 		!write(*,*) 't_start = ', t_start 
