@@ -1,0 +1,28 @@
+These are the changes made to eZND to get it working from MESA-r23 to MESA-r26 
+
+
+Changes made to wd_solver.f90
+    - include 'formats.dek'  -->  include 'formats'
+
+    - added null_solout from mesa-26.04.1/num/pulic/num_lib.f90 as the subroutine my_null_solout
+        - the MESA file is no longer public (now private) and they left null_solout out of the public lines  
+		- therefore to procced without editing the MESA build I added it there 
+    - also means I changed the null_solout to my_null_solout for the calls to dopri5
+
+
+Changes made to lane_emden_solver.f90
+    - null_solout --> my_null_solout for the calls to dopri5
+
+
+Changes made to znd.f90
+    - include 'formats.dek'  -->  include 'formats'
+    - similar to the null_solout, default_set_xscale is no longer being passed out of num_lib, it is called 
+    in the same manner from r23 to r26 but since there is no public :: default_set_xscale it stays hidden 
+        - simply hardcoded into a subroutine (mesa-26.04.1/num/public/num_newton.dek)
+    - remove the use "num_lib, only:null_solout"
+    - add the null_solout subroutine in like the others 
+    - work_net in the cleanup subroutine is being deallocated but was never used
+        - add a pointer to set it to null in the declaration
+        - also remove it form the deallocation 
+        - remove chem_id, net_iso from the error 3 deallocation line 
+        - add call free_net_handle(handle), as handles where called on in setup_net but not deallocated
